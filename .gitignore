@@ -1,4 +1,4 @@
-# Données brutes — trop lourdes pour GitHub
+# Données brutes — téléchargées automatiquement au lancement
 data/raw/
 data/processed/
 
@@ -20,3 +20,7 @@ env/
 # OS
 .DS_Store
 Thumbs.db
+
+# Fichier d'exploration (inutile sur GitHub)
+explore_data.py
+exploration_resultats.txt
