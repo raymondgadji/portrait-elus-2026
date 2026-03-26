@@ -1,8 +1,6 @@
 """
 app.py  —  Portrait des Élus Municipaux 2026
-Page d'accueil : KPIs globaux + présentation du projet
 """
-
 import streamlit as st
 from utils.loader import charger_maires, charger_conseillers
 
@@ -12,6 +10,30 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
 )
+
+LINKEDIN = "https://www.linkedin.com/in/raymond-gadji/"
+
+def afficher_footer():
+    st.markdown("---")
+    st.markdown(
+        f"""
+        <div style="text-align:center; padding:0.8rem 0 0.2rem 0;">
+            <p style="margin:0; font-size:0.85rem;">
+                © 2026 Créé par
+                <a href="{LINKEDIN}" target="_blank"
+                   style="color:#4A90D9; text-decoration:none; font-weight:600;">
+                    Raymond Gadji
+                </a>
+                — Data Analyst
+            </p>
+            <p style="margin:0.25rem 0 0 0; font-size:0.75rem; color:#888;">
+                Source : Répertoire National des Élus (RNE) — Ministère de l'Intérieur
+                | Licence Ouverte 2.0 | Données : décembre 2025
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 st.title("🗳️ Portrait des Élus Municipaux 2026")
 st.markdown(
@@ -39,24 +61,20 @@ age_moy_maires    = maires["age"].dropna().mean()
 age_moy_cons      = conseillers["age"].dropna().mean()
 
 st.markdown("## 📊 Chiffres clés")
-
 col1, col2, col3, col4 = st.columns(4)
 with col1:
     st.metric("Total élu·es analysé·es",
               f"{total_elus:,}".replace(",", " "))
 with col2:
-    st.metric("Femmes maires",
-              f"{pct_f_maires:.1f} %",
+    st.metric("Femmes maires", f"{pct_f_maires:.1f} %",
               delta=f"soit {(maires['sexe']=='F').sum():,} maires".replace(",", " "),
               delta_color="off")
 with col3:
-    st.metric("Femmes conseillères",
-              f"{pct_f_conseillers:.1f} %",
+    st.metric("Femmes conseillères", f"{pct_f_conseillers:.1f} %",
               delta=f"soit {(conseillers['sexe']=='F').sum():,} conseillères".replace(",", " "),
               delta_color="off")
 with col4:
-    st.metric("Âge moyen des maires",
-              f"{age_moy_maires:.1f} ans",
+    st.metric("Âge moyen des maires", f"{age_moy_maires:.1f} ans",
               delta=f"conseillers : {age_moy_cons:.1f} ans",
               delta_color="off")
 
@@ -94,8 +112,4 @@ with col_d:
     - Données par département
     """)
 
-st.markdown("---")
-st.caption(
-    "Source : Répertoire National des Élus (RNE) — Ministère de l'Intérieur | "
-    "Licence Ouverte / Open Licence 2.0 | Données : décembre 2025"
-)
+afficher_footer()

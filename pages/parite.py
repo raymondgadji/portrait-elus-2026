@@ -5,6 +5,31 @@ pages/1_Parité.py  —  Analyse de la parité hommes / femmes
 import streamlit as st
 import plotly.express as px
 import pandas as pd
+
+LINKEDIN = "https://www.linkedin.com/in/raymond-gadji/"
+
+def afficher_footer():
+    st.markdown("---")
+    st.markdown(
+        f"""
+        <div style="text-align:center; padding:0.8rem 0 0.2rem 0;">
+            <p style="margin:0; font-size:0.85rem;">
+                © 2026 Créé par
+                <a href="{LINKEDIN}" target="_blank"
+                   style="color:#4A90D9; text-decoration:none; font-weight:600;">
+                    Raymond Gadji
+                </a>
+                — Data Analyst
+            </p>
+            <p style="margin:0.25rem 0 0 0; font-size:0.75rem; color:#888;">
+                Source : Répertoire National des Élus (RNE) — Ministère de l’Intérieur
+                | Licence Ouverte 2.0 | Données : décembre 2025
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
 from utils.loader import charger_maires, charger_conseillers
 
 st.set_page_config(page_title="Parité", page_icon="👥", layout="wide")
@@ -151,5 +176,4 @@ with tab3:
         flop10.columns = ["Département", "% Femmes", "Total maires", "Nb femmes"]
         st.dataframe(flop10, use_container_width=True, hide_index=True)
 
-st.markdown("---")
-st.caption("Source : RNE — Ministère de l'Intérieur | Licence Ouverte 2.0")
+afficher_footer()
