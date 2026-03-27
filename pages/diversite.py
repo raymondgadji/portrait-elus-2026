@@ -321,11 +321,6 @@ with tab2:
             ),
             text=groupe["Commune"],
             textposition="top center",
-            hovertemplate=(
-                "<b>%{text}</b><br>"
-                + groupe["Prénom Nom"].values[0] + "<br>"
-                + "<extra></extra>"
-            ),
             customdata=groupe[["Prénom Nom", "Parti", "Score (%)"]].values,
             hovertemplate=(
                 "<b>%{text}</b><br>"
