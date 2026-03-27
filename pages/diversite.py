@@ -278,8 +278,11 @@ with tab1:
             with col1:
                 st.markdown(f"**Parti :** {row['Parti']}")
                 st.markdown(f"**Tour :** {row['Tour']}")
-                if row['Score (%)']:
+                score = row['Score (%)']
+                if score is not None and str(score) not in ('nan', 'None', ''):
                     st.markdown(f"**Score :** {row['Score (%)']}%")
+                else:
+                    st.markdown('**Score :** non disponible')
                 st.markdown(f"**Origine (presse) :** {row['Origine (presse)']}")
             with col2:
                 if row['Profil']:
@@ -288,11 +291,11 @@ with tab1:
     st.markdown("---")
     st.markdown("### Tableau complet")
     cols_affichage = ["Prénom Nom", "Commune", "Département", "Tour", "Parti", "Score (%)", "Origine (presse)"]
-    st.dataframe(
-        df_affiche[cols_affichage].reset_index(drop=True),
-        use_container_width=True,
-        hide_index=True,
+    df_tableau = df_affiche[cols_affichage].copy().reset_index(drop=True)
+    df_tableau["Score (%)"] = df_tableau["Score (%)"].apply(
+        lambda x: f"{x}%" if x is not None and str(x) not in ("nan", "None", "") else "N/D"
     )
+    st.dataframe(df_tableau, use_container_width=True, hide_index=True)
 
 
 # ══════════════════════════════════════════════════════
