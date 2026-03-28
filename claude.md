@@ -5,204 +5,157 @@
 
 ## 👤 Profil développeur
 
-- **Nom du projet** : Portrait des Élus Municipaux 2026
-- **Développeur** : Aspirant data analyst, bootcamp Simplon Paris Montreuil
-- **Stack maîtrisée** : Python (débutant), Streamlit, HTML/CSS/JS vanilla, Flask (débutant)
+- **Nom** : Raymond Gadji
+- **Profil LinkedIn** : https://www.linkedin.com/in/raymond-gadji/
+- **Formation** : Bootcamp Data Analyst, Simplon Paris Montreuil
+- **Stack maîtrisée** : Python (intermédiaire), Streamlit, Pandas, Plotly, HTML/CSS/JS vanilla, Flask (débutant)
 - **Projets existants** :
   - [Trajets Verts Paris](https://trajets-verts-paris.streamlit.app/)
   - [Éléphants mini-RAG](https://elephants.streamlit.app/)
-- **Environnement** : VS Code local + déploiement Streamlit Cloud
-- **Repo GitHub** : _(à créer — nommer : `portrait-elus-2026`)_
+- **Environnement** : VS Code local (Windows) + déploiement Streamlit Cloud
+- **Repo GitHub** : https://github.com/raymondgadji/portrait-elus-2026
 
 ---
 
 ## 🎯 Objectif du projet
 
 Participer au **Défi 2 — "Profil des élus"** du Challenge Open Data data.gouv.fr.
-- Deadline : **13 avril 2026**
-- Mot-clé à publier : `defi-municipales-2026-résultats`
-- URL défi : https://defis.data.gouv.fr/defis/elections-municipales-2026-profils-des-elus
+- **Deadline** : 13 avril 2026
+- **Mot-clé publié** : `defi-municipales-2026-resultats`
+- **URL défi** : https://defis.data.gouv.fr/defis/elections-municipales-2026-profils-des-elus
+- **URL app** : https://portrait-elus-2026.streamlit.app
+- **URL data.gouv.fr** : https://data.gouv.fr/reuses/portrait-des-elus-municipaux-2026
 
-**Question centrale de notre app** :
-> *Qui sont les élu·es municipaux de France en 2026 ? Sont-ils représentatifs de la population ?*
+---
+
+## ✅ État du projet au 27 mars 2026
+
+### Pages déployées et fonctionnelles
+| Fichier | Page | Statut |
+|---------|------|--------|
+| `app.py` | Accueil + KPIs | ✅ |
+| `pages/age.py` | Âge des élus | ✅ |
+| `pages/carte.py` | Carte interactive | ✅ |
+| `pages/parite.py` | Parité H/F | ✅ |
+| `pages/professions.py` | CSP des élus | ✅ |
+| `pages/5_Diversite.py` | Diversité & représentation | ✅ |
+
+### Données
+- **Maires** : 34 874 lignes (`elus-maires-mai.csv`)
+- **Conseillers** : 485 827 lignes (`elus-conseillers-municipaux-cm.csv`)
+- **Encodage** : latin-1 (correction double-encodage dans loader.py)
+- **Téléchargement** : automatique depuis data.gouv.fr au premier lancement
+
+### Bugs résolus
+- `KeyError: 'code_dep'` → renommage par position dans loader.py
+- `OverflowError: Overflow in int64 addition` → calcul âge en Python pur
+- `UnicodeEncodeError` sur Windows → suppression emojis dans explore_data.py
+- `SyntaxError: keyword argument repeated: hovertemplate` → doublon supprimé
+- `nan%` sur scores None → remplacement par "non disponible" / "N/D"
 
 ---
 
 ## 📦 Sources de données
 
-### Source principale — Répertoire National des Élus (RNE)
-- **Producteur** : Ministère de l'Intérieur
+### RNE — Répertoire National des Élus
 - **URL dataset** : https://www.data.gouv.fr/datasets/repertoire-national-des-elus-1
-- **Fichier maires** (CSV ~4 Mo) :
-  `https://www.data.gouv.fr/api/1/datasets/r/2876a346-d50c-4911-934e-19ee07b0e503`
-- **Fichier conseillers municipaux** (CSV ~58 Mo) :
-  `https://www.data.gouv.fr/api/1/datasets/r/d5f400de-ae3f-4966-8cb6-a85c70c6c24a`
-- **Licence** : Licence Ouverte / Open Licence 2.0 ✅ (réutilisation libre)
-- **Séparateur CSV** : point-virgule (`;`)
-- **Mise à jour** : décembre 2025 (données pré-élections 2026 — les nouvelles données post-22 mars seront publiées)
+- **Maires** : `https://www.data.gouv.fr/api/1/datasets/r/2876a346-d50c-4911-934e-19ee07b0e503`
+- **Conseillers** : `https://www.data.gouv.fr/api/1/datasets/r/d5f400de-ae3f-4966-8cb6-a85c70c6c24a`
+- **Séparateur** : `;` | **Encodage** : `latin-1`
+- **Colonnes** : renommées par index (0→code_dep, 1→dep, ... 8→sexe, 9→date_naissance, 11→csp)
 
-### Source secondaire — Élus sortants 2026
-- **URL dataset** : https://www.data.gouv.fr/datasets/elections-municipales-2026-maires-et-conseillers-municipaux-sortants
-- Permet la comparaison avant/après élections
+### Résultats officiels municipales 2026
+- **Ministère de l'Intérieur** : https://www.resultats-elections.interieur.gouv.fr/municipales2026/
 
-### À surveiller (données post-élections)
-- Les nouvelles listes d'élus issus du scrutin des 15 et 22 mars 2026 seront publiées sur data.gouv.fr
-- Surveiller : https://www.data.gouv.fr/datasets/elections-municipales-2026-resultats-du-premier-tour
+### Page Diversité — sources journalistiques
+- AJ+ Français — reportage maires issus de l'immigration (mars 2026)
+- France Info — Bally Bagayoko (Saint-Denis)
+- La Semaine de l'Île-de-France — Yahaya Soukouna (Fleury-Mérogis)
+- Résultats officiels Ministère de l'Intérieur
 
 ---
 
-## 🗂️ Structure du projet (arborescence cible)
+## 🗂️ Structure du projet
 
 ```
 portrait-elus-2026/
-├── claude.md                  # CE FICHIER — à garder à la racine
+├── claude.md
 ├── README.md
 ├── requirements.txt
 ├── .gitignore
-├── app.py                     # Point d'entrée Streamlit
+├── .streamlit/
+│   └── config.toml
+├── app.py
 ├── data/
-│   ├── raw/                   # Données brutes téléchargées (non commitées)
-│   │   ├── maires.csv
-│   │   └── conseillers.csv
-│   └── processed/             # Données nettoyées (non commitées)
+│   ├── raw/          ← gitignorés, téléchargés au lancement
+│   └── processed/
 ├── pages/
-│   ├── 01_parité.py
-│   ├── 02_âge.py
-│   ├── 03_professions.py
-│   └── 04_territoires.py
+│   ├── age.py
+│   ├── carte.py
+│   ├── parite.py
+│   ├── professions.py
+│   └── 5_Diversite.py
 └── utils/
-    ├── loader.py              # Chargement et cache des données
-    └── charts.py              # Fonctions de visualisation réutilisables
+    ├── __init__.py
+    └── loader.py
 ```
 
 ---
 
-## 🧱 Architecture de l'app Streamlit
+## ⚙️ Points techniques importants
 
-### Page d'accueil (`app.py`)
-- Titre + explication du projet
-- KPIs clés : nb total d'élus, % femmes, âge moyen
-- Lien vers les 4 onglets thématiques
+### loader.py
+- Téléchargement automatique si CSV absent (`_assurer_presence`)
+- Renommage par **position** (pas par nom) pour éviter les bugs d'encodage
+- Correction double-encodage : `.encode("latin-1").decode("utf-8")`
+- Calcul âge en Python pur (`date.today() - date(a, m, j)`) — compatible Python 3.13+
+- `@st.cache_data` sur les deux fonctions de chargement
 
-### Page 1 — Parité hommes/femmes
-- % de femmes maires par région (carte choroplèthe)
-- Évolution parité si données historiques disponibles
-- Top/Flop départements parité
-
-### Page 2 — Âge des élus
-- Distribution des âges (histogramme)
-- Âge moyen maire vs conseiller par département
-- Comparaison âge élus vs âge population INSEE
-
-### Page 3 — Professions
-- Donut chart des CSP (catégories socio-professionnelles)
-- Comparaison avec la répartition nationale INSEE
-- Quelles professions sur-représentées ?
-
-### Page 4 — Carte interactive
-- Carte France avec filtre par variable (genre, âge, CSP)
-- Granularité : région → département → commune (si données dispo)
+### Windows / PowerShell
+- La commande `rename` n'existe pas → utiliser `Rename-Item`
+- La commande `code` n'est pas dans le PATH → ouvrir les fichiers depuis VS Code directement
+- Redirection `> fichier.txt` fonctionne mais nécessite `sys.stdout.reconfigure(encoding="utf-8")`
 
 ---
 
-## ⚙️ Stack technique
+## 💡 Idée future — Indice de Représentativité Démocratique (IRD)
 
-```
-Python           3.11+
-Streamlit        >= 1.32
-Pandas           >= 2.0
-Plotly           >= 5.18       # Graphiques interactifs
-Folium           >= 0.16       # Cartes (optionnel)
-Geopandas        >= 0.14       # Cartes choroplèthes
-Requests         >= 2.31       # Téléchargement données
-```
-
-### `requirements.txt`
-```
-streamlit
-pandas
-plotly
-requests
-geopandas
-folium
-streamlit-folium
-openpyxl
-```
-
----
-
-## 🚀 Plan de développement (3 semaines)
-
-### Semaine 1 — Data (25 mars → 1er avril)
-- [ ] Créer le repo GitHub `portrait-elus-2026`
-- [ ] Télécharger les données RNE (maires + conseillers)
-- [ ] Explorer les colonnes disponibles (Jupyter ou VS Code)
-- [ ] Nettoyer : valeurs manquantes, formats dates, codes département
-- [ ] Calculer les KPIs de base (parité, âge moyen, top professions)
-
-### Semaine 2 — App (1er → 8 avril)
-- [ ] Créer `app.py` avec structure de navigation
-- [ ] Page Parité : graphiques + carte
-- [ ] Page Âge : histogramme + comparaison INSEE
-- [ ] Page Professions : donut + tableau
-
-### Semaine 3 — Finitions (8 → 13 avril)
-- [ ] Page Carte interactive (Folium ou Plotly)
-- [ ] Habillage CSS / thème Streamlit
-- [ ] README bien rédigé
-- [ ] Déploiement Streamlit Cloud
-- [ ] Publication réutilisation sur data.gouv.fr avec mot-clé
-
----
-
-## 📋 Colonnes attendues dans les fichiers RNE
-
-D'après la documentation et les précédentes versions du RNE :
-
-| Colonne | Description |
-|---------|-------------|
-| `Code du département` | Code INSEE département (ex: 75, 13) |
-| `Libellé du département` | Nom du département |
-| `Code de la commune` | Code INSEE commune |
-| `Libellé de la commune` | Nom de la commune |
-| `Nom de l'élu` | Nom de famille |
-| `Prénom de l'élu` | Prénom |
-| `Code sexe` | M ou F |
-| `Date de naissance` | Format JJ/MM/AAAA |
-| `Code de la catégorie socio-professionnelle` | Code CSP INSEE |
-| `Libellé de la catégorie socio-professionnelle` | Libellé CSP |
-| `Date de début du mandat` | |
-| `Libellé de la fonction` | Maire, Adjoint, Conseiller... |
+**Concept** : score synthétique par commune mesurant à quel point les élus ressemblent à leurs administrés.
+- Croise : âge des élus vs pyramide INSEE, genre des élus vs % population, CSP des élus vs répartition locale
+- Résultat : score 0-100 par commune, cartographiable
+- **Pourquoi c'est puissant** : aucun observatoire officiel français n'a encore ce score. C'est exactement la question centrale du défi. Outil actionnable pour les politiques publiques.
+- **Données nécessaires** : RNE (déjà en place) + données INSEE communales (revenus, âge, CSP)
+- **À coder** : `pages/6_IRD.py` + enrichissement du loader avec données INSEE
 
 ---
 
 ## 🏁 Checklist publication data.gouv.fr
 
-- [ ] App déployée sur Streamlit Cloud
-- [ ] Lien fonctionnel testé
-- [ ] Compte créé sur data.gouv.fr
-- [ ] Réutilisation publiée avec :
-  - Titre clair
-  - Description du projet
-  - Jeux de données liés (RNE)
-  - Mot-clé : **`defi-municipales-2026-résultats`**
-  - URL de l'app Streamlit
+- [x] App déployée sur Streamlit Cloud
+- [x] Réutilisation publiée sur data.gouv.fr
+- [x] Jeu de données RNE lié
+- [x] Mot-clé `defi-municipales-2026-resultats` ajouté
+- [x] Image de couverture uploadée
+- [x] Footer signé Raymond Gadji + LinkedIn
 
 ---
 
 ## 💬 Notes de session
 
-_Ajouter ici les décisions importantes prises au fil des sessions_
-
 - **25/03/2026** — Choix Option B (Défi 2 Profil des élus). Données RNE identifiées. Structure projet définie.
+- **26/03/2026** — App complète (5 pages) déployée. Publiée sur data.gouv.fr. Tous les bugs résolus.
+- **27/03/2026** — Page Diversité finalisée avec 15 maires, scores officiels, carte, contexte.
+  - Scores vérifiés sur resultats-elections.interieur.gouv.fr
+  - Idée IRD (Indice de Représentativité Démocratique) identifiée comme prochaine étape révolutionnaire 🚀
 
 ---
 
 ## 🔗 Liens utiles
 
-- data.gouv.fr : https://www.data.gouv.fr
+- App live : https://portrait-elus-2026.streamlit.app
+- data.gouv.fr : https://data.gouv.fr/reuses/portrait-des-elus-municipaux-2026
+- GitHub : https://github.com/raymondgadji/portrait-elus-2026
 - Défi officiel : https://defis.data.gouv.fr/defis/elections-municipales-2026-profils-des-elus
 - RNE dataset : https://www.data.gouv.fr/datasets/repertoire-national-des-elus-1
-- Guide publication réutilisation : https://guides.data.gouv.fr/publier-des-donnees/guide-data.gouv.fr/reutilisations
-- Streamlit docs : https://docs.streamlit.io
-- Plotly Express : https://plotly.com/python/plotly-express/
+- Résultats officiels : https://www.resultats-elections.interieur.gouv.fr/municipales2026/
+- LinkedIn Raymond : https://www.linkedin.com/in/raymond-gadji/

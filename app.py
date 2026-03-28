@@ -1,5 +1,6 @@
 """
 app.py  —  Portrait des Élus Municipaux 2026
+Page d'accueil : KPIs globaux + navigation dans l'ordre de la sidebar
 """
 import streamlit as st
 from utils.loader import charger_maires, charger_conseillers
@@ -16,40 +17,35 @@ LINKEDIN = "https://www.linkedin.com/in/raymond-gadji/"
 def afficher_footer():
     st.markdown("---")
     st.markdown(
-        f"""
-        <div style="text-align:center; padding:0.8rem 0 0.2rem 0;">
-            <p style="margin:0; font-size:0.85rem;">
+        f"""<div style="text-align:center;padding:0.8rem 0 0.2rem 0;">
+            <p style="margin:0;font-size:0.85rem;">
                 © 2026 Créé par
                 <a href="{LINKEDIN}" target="_blank"
-                   style="color:#4A90D9; text-decoration:none; font-weight:600;">
+                   style="color:#4A90D9;text-decoration:none;font-weight:600;">
                     Raymond Gadji
-                </a>
-                — Data Analyst
+                </a> — Data Analyst
             </p>
-            <p style="margin:0.25rem 0 0 0; font-size:0.75rem; color:#888;">
+            <p style="margin:0.25rem 0 0 0;font-size:0.75rem;color:#888;">
                 Source : Répertoire National des Élus (RNE) — Ministère de l'Intérieur
                 | Licence Ouverte 2.0 | Données : décembre 2025
             </p>
-        </div>
-        """,
+        </div>""",
         unsafe_allow_html=True,
     )
 
 st.title("🗳️ Portrait des Élus Municipaux 2026")
-st.markdown(
-    """
-    **Qui sont les élu·es qui nous gouvernent ?** Sont-ils représentatifs de la population française ?
+st.markdown("""
+**Qui sont les élu·es qui nous gouvernent ?** Sont-ils représentatifs de la population française ?
 
-    Ce tableau de bord explore les profils des **maires** et **conseillers municipaux** issus
-    des élections des 15 et 22 mars 2026, à partir des données ouvertes du
-    [Répertoire National des Élus](https://www.data.gouv.fr/datasets/repertoire-national-des-elus-1)
-    (Ministère de l'Intérieur).
+Ce tableau de bord explore les profils des **maires** et **conseillers municipaux** issus
+des élections des 15 et 22 mars 2026, à partir des données ouvertes du
+[Répertoire National des Élus](https://www.data.gouv.fr/datasets/repertoire-national-des-elus-1)
+(Ministère de l'Intérieur).
 
-    ---
-    📌 *Projet réalisé dans le cadre du [Challenge Open Data data.gouv.fr](https://defis.data.gouv.fr/defis/elections-municipales-2026-profils-des-elus)
-    — Défi 2 : Profil des élu·es — mot-clé `defi-municipales-2026-résultats`*
-    """
-)
+---
+📌 *Projet réalisé dans le cadre du [Challenge Open Data data.gouv.fr](https://defis.data.gouv.fr/defis/elections-municipales-2026-profils-des-elus)
+— Défi 2 : Profil des élu·es — mot-clé `defi-municipales-2026-résultats`*
+""")
 
 maires      = charger_maires()
 conseillers = charger_conseillers()
@@ -82,13 +78,14 @@ st.markdown("---")
 st.markdown("## 🧭 Naviguer dans l'application")
 st.markdown("*Cliquez sur un onglet dans la barre latérale gauche pour explorer chaque thématique.*")
 
-col_a, col_b, col_c, col_d = st.columns(4)
+# Ordre identique à la sidebar (ordre alphabétique des fichiers pages/)
+col_a, col_b, col_c = st.columns(3)
 with col_a:
     st.markdown("""
-    **👥 Parité**
-    - Répartition femmes/hommes
-    - Par département
-    - Comparaison vs population française
+    **🏛️ IRD — Indice de Représentativité**
+    - Score inédit par commune (0-100)
+    - Mesure l'écart élus / population
+    - Classement national + recherche
     """)
 with col_b:
     st.markdown("""
@@ -99,17 +96,31 @@ with col_b:
     """)
 with col_c:
     st.markdown("""
+    **🗺️ Carte interactive**
+    - % femmes, âge moyen, nb maires
+    - Données par département
+    """)
+
+col_d, col_e, col_f = st.columns(3)
+with col_d:
+    st.markdown("""
+    **🌍 Diversité & Représentation**
+    - 15 maires issus de l'immigration
+    - Carte + portraits + contexte
+    """)
+with col_e:
+    st.markdown("""
+    **👥 Parité hommes / femmes**
+    - Répartition femmes/hommes
+    - Par département
+    - Comparaison vs population française
+    """)
+with col_f:
+    st.markdown("""
     **💼 Professions**
     - Grandes catégories CSP
     - Détail par profession
     - Comparaison vs population active
-    """)
-with col_d:
-    st.markdown("""
-    **🗺️ Carte**
-    - Carte interactive France
-    - % femmes, âge moyen, nb maires
-    - Données par département
     """)
 
 afficher_footer()
