@@ -18,7 +18,8 @@ import plotly.express as px
 import plotly.graph_objects as go
 import requests
 from pathlib import Path
-from utils.loader import charger_maires
+from utils.loader import charger_maires, charger_conseillers
+
 
 # ── Config ────────────────────────────────────────────────────────────────────
 st.set_page_config(page_title="IRD - Indice de Représentativité", page_icon="🏛️", layout="wide")
@@ -249,6 +250,7 @@ def calculer_ird(maires: pd.DataFrame, insee: pd.DataFrame) -> pd.DataFrame:
 
 # ── Chargement ────────────────────────────────────────────────────────────────
 maires = charger_maires()
+conseillers = charger_conseillers()
 insee  = charger_insee()
 
 if insee.empty:
@@ -436,55 +438,89 @@ with tab2:
 with tab3:
     st.markdown("### IRD selon la taille des communes")
 
-    def taille_commune(nb):
-        if nb <= 3: return "Très petites (<500 hab. approx.)"
-        if nb <= 7: return "Petites (500-2000 hab. approx.)"
-        if nb <= 15: return "Moyennes (2000-5000 hab. approx.)"
-        if nb <= 33: return "Grandes (5000-20 000 hab. approx.)"
-        return "Très grandes (>20 000 hab. approx.)"
+    # Calcul du nb de conseillers par commune (vrai proxy de taille)
+    nb_cons_par_commune = (
+        conseillers
+        .assign(code_commune_5=lambda d:
+            d["code_dep"].astype(str).str.zfill(2) +
+            d["code_commune"].astype(str).str.zfill(3)
+        )
+        .groupby("code_commune_5")
+        .size()
+        .reset_index(name="nb_conseillers")
+    )
 
-    ird_df["taille"] = ird_df["nb_elus"].apply(taille_commune)
+    ird_df_box = ird_df.merge(nb_cons_par_commune, on="code_commune_5", how="left")
+    ird_df_box["nb_conseillers"] = ird_df_box["nb_conseillers"].fillna(1)
+
+    def taille_commune(nb):
+        if nb <= 7:  return "Très petites (≤7 conseillers)"
+        if nb <= 15: return "Petites (8-15 conseillers)"
+        if nb <= 23: return "Moyennes (16-23 conseillers)"
+        if nb <= 33: return "Grandes (24-33 conseillers)"
+        return "Très grandes (>33 conseillers)"
+
+    ird_df_box["taille"] = ird_df_box["nb_conseillers"].apply(taille_commune)
+
+    ordre_tailles = [
+        "Très petites (≤7 conseillers)",
+        "Petites (8-15 conseillers)",
+        "Moyennes (16-23 conseillers)",
+        "Grandes (24-33 conseillers)",
+        "Très grandes (>33 conseillers)",
+    ]
 
     fig_box = px.box(
-        ird_df, x="taille", y="IRD",
+        ird_df_box, x="taille", y="IRD",
         color="taille",
         color_discrete_sequence=px.colors.qualitative.Set2,
-        title="Distribution de l'IRD selon la taille de commune (proxy : nb d'élus)",
+        title="Distribution de l'IRD selon la taille de commune (nb de conseillers municipaux)",
         labels={"taille": "Taille de commune", "IRD": "Score IRD"},
-        category_orders={"taille": [
-            "Très petites (<500 hab. approx.)",
-            "Petites (500-2000 hab. approx.)",
-            "Moyennes (2000-5000 hab. approx.)",
-            "Grandes (5000-20 000 hab. approx.)",
-            "Très grandes (>20 000 hab. approx.)",
-        ]},
+        category_orders={"taille": ordre_tailles},
     )
     fig_box.update_layout(showlegend=False)
     st.plotly_chart(fig_box, use_container_width=True)
 
     st.markdown("### Relation IRD — parité femmes/hommes")
+
+    # % femmes par commune calculé sur les conseillers (valeurs continues 0-100%)
+    pct_femmes_cons = (
+        conseillers
+        .assign(code_commune_5=lambda d:
+            d["code_dep"].astype(str).str.zfill(2) +
+            d["code_commune"].astype(str).str.zfill(3)
+        )
+        .groupby("code_commune_5")
+        .apply(lambda x: (x["sexe"] == "F").mean() * 100)
+        .reset_index(name="pct_femmes_conseillers")
+    )
+
+    ird_df_scatter = ird_df.merge(pct_femmes_cons, on="code_commune_5", how="left")
+
     fig_scatter = px.scatter(
-        ird_df.sample(min(3000, len(ird_df)), random_state=42),
-        x="pct_femmes_elus",
+        ird_df_scatter.sample(min(3000, len(ird_df_scatter)), random_state=42),
+        x="pct_femmes_conseillers",
         y="IRD",
         color="score_genre",
         color_continuous_scale=["#e76f51", "#2a9d8f"],
         hover_data=["commune", "dep"],
         labels={
-            "pct_femmes_elus": "% de femmes parmi les élus",
+            "pct_femmes_conseillers": "% de femmes parmi les conseillers municipaux",
             "IRD": "Score IRD",
             "score_genre": "Score genre",
         },
-        title="IRD en fonction du % de femmes élues (échantillon de 3 000 communes)",
+        title="IRD en fonction du % de femmes conseillères (échantillon de 3 000 communes)",
         opacity=0.6,
     )
-    fig_scatter.add_vline(x=51.6, line_dash="dash", line_color="blue",
-                          annotation_text="51.6% (pop. française)",
-                          annotation_position="top right")
+    fig_scatter.add_vline(
+        x=51.6, line_dash="dash", line_color="blue",
+        annotation_text="51.6% (pop. française)",
+        annotation_position="top right",
+    )
     st.plotly_chart(fig_scatter, use_container_width=True)
 
     st.info(
-        "**Observation :** Les communes avec un % de femmes élues proche de 51,6% "
+        "**Observation :** Les communes avec un % de femmes conseillères proche de 51,6% "
         "(part des femmes dans la population) obtiennent les meilleurs scores IRD. "
         "La parité est la composante qui a le plus d'impact sur l'IRD car son poids est de 40%."
     )
@@ -568,11 +604,6 @@ with tab4:
                         ]
 
                         for nom, score, _, detail in composantes_detail:
-                            couleur_jauge = (
-                                "#2a9d8f" if score >= 70
-                                else "#e9c46a" if score >= 50
-                                else "#e76f51"
-                            )
                             emoji_comp = "🟢" if score >= 70 else "🟡" if score >= 50 else "🔴"
                             st.markdown(
                                 f"{emoji_comp} **{nom}** — {score:.0f}/100  \n"
