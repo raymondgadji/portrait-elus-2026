@@ -78,7 +78,7 @@ st.markdown("---")
 st.markdown("## 🧭 Naviguer dans l'application")
 st.markdown("*Cliquez sur un onglet dans la barre latérale gauche pour explorer chaque thématique.*")
 
-# Ordre identique à la sidebar (ordre alphabétique des fichiers pages/)
+# Ordre identique à la sidebar : IRD / parite / age / diversite / carte / professions
 col_a, col_b, col_c = st.columns(3)
 with col_a:
     st.markdown("""
@@ -89,16 +89,17 @@ with col_a:
     """)
 with col_b:
     st.markdown("""
+    **👥 Parité hommes / femmes**
+    - Répartition femmes/hommes
+    - Par département
+    - Comparaison vs population française
+    """)
+with col_c:
+    st.markdown("""
     **🎂 Âge**
     - Distribution des âges
     - Par tranche et par genre
     - Âge moyen par département
-    """)
-with col_c:
-    st.markdown("""
-    **🗺️ Carte interactive**
-    - % femmes, âge moyen, nb maires
-    - Données par département
     """)
 
 col_d, col_e, col_f = st.columns(3)
@@ -110,10 +111,9 @@ with col_d:
     """)
 with col_e:
     st.markdown("""
-    **👥 Parité hommes / femmes**
-    - Répartition femmes/hommes
-    - Par département
-    - Comparaison vs population française
+    **🗺️ Carte interactive**
+    - % femmes, âge moyen, nb maires
+    - Données par département
     """)
 with col_f:
     st.markdown("""
@@ -122,5 +122,3 @@ with col_f:
     - Détail par profession
     - Comparaison vs population active
     """)
-
-afficher_footer()

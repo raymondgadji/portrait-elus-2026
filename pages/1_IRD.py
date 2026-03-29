@@ -273,6 +273,10 @@ if insee.empty:
 
 ird_df = calculer_ird(maires, insee)
 
+# P1 — Filtrer les communes avec IRD anormalement bas (données insuffisantes)
+ird_df = ird_df[ird_df["IRD"] >= 10].copy()
+nb_communes = len(ird_df)  # recalculer après filtre
+
 if ird_df.empty:
     st.error("Impossible de calculer l'IRD. Vérifiez les données.")
     st.stop()
@@ -510,15 +514,72 @@ with tab4:
                 couleur = "#2a9d8f" if ird_val >= 70 else "#e9c46a" if ird_val >= 50 else "#e76f51"
                 emoji   = "🟢" if ird_val >= 70 else "🟡" if ird_val >= 50 else "🔴"
 
+                # ── P4 : phrase d'interprétation automatique ──────────────
+                scores = {
+                    "le genre": row["score_genre"],
+                    "l'âge":    row["score_age"],
+                    "la CSP":   row["score_csp"],
+                }
+                meilleur  = max(scores, key=scores.get)
+                plus_faible = min(scores, key=scores.get)
+                rang_pct  = round((1 - (row["rang"] / nb_communes)) * 100)
+
+                if ird_val >= 70:
+                    niveau = "très bonne"
+                elif ird_val >= 50:
+                    niveau = "moyenne"
+                else:
+                    niveau = "faible"
+
+                phrase = (
+                    f"**{row['commune']}** présente une représentativité **{niveau}** "
+                    f"(top {100 - rang_pct}% national), portée principalement par "
+                    f"**{meilleur}** (score : {scores[meilleur]:.0f}/100), "
+                    f"mais pénalisée par **{plus_faible}** (score : {scores[plus_faible]:.0f}/100)."
+                )
+
                 with st.expander(
                     f"{emoji} **{row['commune']}** ({row['dep']}) — IRD : {ird_val}/100"
                 ):
+                    # ── Phrase interprétation (P4) ────────────────────────
+                    st.info(phrase)
+
                     col1, col2 = st.columns(2)
                     with col1:
                         st.markdown(f"**Score IRD global : {ird_val}/100**")
                         st.progress(int(ird_val) / 100)
-                        st.markdown(f"Rang national : {row['rang']:,}/{nb_communes:,}".replace(",", " "))
+                        st.markdown(
+                            f"Rang national : **{row['rang']:,}/{nb_communes:,}**"
+                            .replace(",", " ")
+                        )
                         st.markdown(f"Nombre d'élus : {row['nb_elus']}")
+
+                        st.markdown("---")
+                        st.markdown("**Détail des composantes :**")
+
+                        # ── P3 : jauges visuelles pour chaque composante ──
+                        composantes_detail = [
+                            ("Genre", row["score_genre"], row["ecart_genre"],
+                             f"{row['ecart_genre']:.1f} pts d'écart élus/population"),
+                            ("Âge",   row["score_age"],   row["ecart_age"],
+                             f"{row['ecart_age']:.1f} ans d'écart élus/médiane pop."),
+                            ("CSP",   row["score_csp"],   row["ecart_csp"],
+                             f"{row['ecart_csp']:.1f} pts d'écart sur % cadres"),
+                        ]
+
+                        for nom, score, _, detail in composantes_detail:
+                            couleur_jauge = (
+                                "#2a9d8f" if score >= 70
+                                else "#e9c46a" if score >= 50
+                                else "#e76f51"
+                            )
+                            emoji_comp = "🟢" if score >= 70 else "🟡" if score >= 50 else "🔴"
+                            st.markdown(
+                                f"{emoji_comp} **{nom}** — {score:.0f}/100  \n"
+                                f"<small style='color:#888'>{detail}</small>",
+                                unsafe_allow_html=True,
+                            )
+                            st.progress(int(score) / 100)
 
                     with col2:
                         # Radar chart des 3 composantes
@@ -532,6 +593,7 @@ with tab4:
                             fillcolor=couleur,
                             opacity=0.3,
                             line=dict(color=couleur, width=2),
+                            name=row["commune"],
                         ))
                         fig_radar.add_trace(go.Scatterpolar(
                             r=[100, 100, 100, 100],
@@ -545,20 +607,11 @@ with tab4:
                         fig_radar.update_layout(
                             polar=dict(radialaxis=dict(visible=True, range=[0, 100])),
                             showlegend=False,
-                            height=250,
+                            height=280,
                             margin=dict(l=20, r=20, t=30, b=20),
                         )
                         st.plotly_chart(fig_radar, use_container_width=True)
 
-                    st.markdown("**Détail des composantes :**")
-                    st.markdown(
-                        f"- **Genre** : {row['score_genre']:.1f}/100 "
-                        f"(écart : {row['ecart_genre']:.1f} points entre élus et population)\n"
-                        f"- **Âge** : {row['score_age']:.1f}/100 "
-                        f"(écart : {row['ecart_age']:.1f} ans entre élus et médiane pop.)\n"
-                        f"- **CSP** : {row['score_csp']:.1f}/100 "
-                        f"(écart : {row['ecart_csp']:.1f} points sur % cadres)"
-                    )
     else:
         st.info("Entrez au moins 2 caractères pour rechercher une commune.")
 
