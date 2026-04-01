@@ -8,6 +8,7 @@ import streamlit as st
 import plotly.express as px
 import pandas as pd
 import requests
+from utils.loader import charger_maires, charger_conseillers
 
 LINKEDIN = "https://www.linkedin.com/in/raymond-gadji/"
 
@@ -25,7 +26,7 @@ def afficher_footer():
                 — Data Analyst
             </p>
             <p style="margin:0.25rem 0 0 0; font-size:0.75rem; color:#888;">
-                Source : Répertoire National des Élus (RNE) — Ministère de l’Intérieur
+                Source : Répertoire National des Élus (RNE) — Ministère de l'Intérieur
                 | Licence Ouverte 2.0 | Données : décembre 2025
             </p>
         </div>
@@ -33,18 +34,27 @@ def afficher_footer():
         unsafe_allow_html=True,
     )
 
-from utils.loader import charger_maires
+@st.cache_data(show_spinner="Chargement de la carte...")
+def charger_geojson():
+    url = "https://raw.githubusercontent.com/gregoiredavid/france-geojson/master/departements-version-simplifiee.geojson"
+    try:
+        r = requests.get(url, timeout=10)
+        return r.json()
+    except Exception:
+        return None
 
 st.set_page_config(page_title="Carte", page_icon="🗺️", layout="wide")
 st.title("🗺️ Carte interactive par département")
 st.markdown("Explore la répartition des élu·es sur le territoire français.")
 
-maires = charger_maires()
+maires      = charger_maires()
+conseillers = charger_conseillers()
 
 # ── Indicateur à afficher ─────────────────────────────────────────────────
 indicateur = st.selectbox(
     "Choisir l'indicateur à cartographier :",
     options=[
+        "IRD — Indice de Représentativité Démocratique",
         "% de femmes maires",
         "Âge moyen des maires",
         "Nombre de maires",
@@ -53,12 +63,45 @@ indicateur = st.selectbox(
 
 # ── Calcul par département ────────────────────────────────────────────────
 dep_stats = maires.groupby(["code_dep", "dep"]).agg(
-    nb_maires   =("sexe", "count"),
-    pct_femmes  =("sexe", lambda x: round((x == "F").mean() * 100, 1)),
-    age_moyen   =("age", lambda x: round(x.mean(), 1)),
+    nb_maires  =("sexe", "count"),
+    pct_femmes =("sexe", lambda x: round((x == "F").mean() * 100, 1)),
+    age_moyen  =("age",  lambda x: round(x.mean(), 1)),
 ).reset_index()
 
-if indicateur == "% de femmes maires":
+def pct_cadres_dep(df):
+    total = len(df)
+    if total == 0:
+        return 0
+    cadres = df["csp"].str.lower().str.contains(
+        "cadre|ingénieur|profession libérale|médecin|pharmacien|architecte|avocat",
+        na=False
+    ).sum()
+    return cadres / total * 100
+
+csp_dep = maires.groupby("code_dep").apply(pct_cadres_dep).reset_index()
+csp_dep.columns = ["code_dep", "pct_cadres"]
+dep_stats = dep_stats.merge(csp_dep, on="code_dep", how="left")
+
+ecart_genre = (dep_stats["pct_femmes"] - 51.6).abs()
+score_genre = (100 - ecart_genre.clip(0, 100)).clip(0, 100)
+
+ecart_age   = (dep_stats["age_moyen"] - 42.0).abs()
+score_age   = (100 - (ecart_age / 30 * 100)).clip(0, 100)
+
+ecart_csp   = (dep_stats["pct_cadres"] - 18.0).abs()
+score_csp   = (100 - ecart_csp.clip(0, 100)).clip(0, 100)
+
+dep_stats["ird_dep"] = (
+    score_genre * 0.40 +
+    score_age   * 0.35 +
+    score_csp   * 0.25
+).round(1)
+
+if indicateur == "IRD — Indice de Représentativité Démocratique":
+    col_val = "ird_dep"
+    titre   = "IRD moyen par département — Indice de Représentativité Démocratique"
+    palette = ["#e76f51", "#e9c46a", "#2a9d8f"]
+elif indicateur == "% de femmes maires":
     col_val = "pct_femmes"
     titre   = "% de femmes maires par département"
     palette = "RdBu"
@@ -71,16 +114,7 @@ else:
     titre   = "Nombre de maires par département"
     palette = "Blues"
 
-# ── GeoJSON départements France (source publique) ─────────────────────────
-@st.cache_data(show_spinner="Chargement de la carte...")
-def charger_geojson():
-    url = "https://raw.githubusercontent.com/gregoiredavid/france-geojson/master/departements-version-simplifiee.geojson"
-    try:
-        r = requests.get(url, timeout=10)
-        return r.json()
-    except Exception:
-        return None
-
+# ── GeoJSON départements France ───────────────────────────────────────────
 geojson = charger_geojson()
 
 if geojson is None:
@@ -101,13 +135,20 @@ else:
         featureidkey="properties.code",
         color=col_val,
         hover_name="dep",
-        hover_data={"pct_femmes": True, "age_moyen": True, "nb_maires": True, "code_dep": False},
+        hover_data={
+            "pct_femmes": True,
+            "age_moyen" : True,
+            "nb_maires" : True,
+            "ird_dep"   : True,
+            "code_dep"  : False,
+        },
         color_continuous_scale=palette,
         title=titre,
         labels={
-            "pct_femmes" : "% femmes",
-            "age_moyen"  : "Âge moyen",
-            "nb_maires"  : "Nb maires",
+            "pct_femmes": "% femmes",
+            "age_moyen" : "Âge moyen",
+            "nb_maires" : "Nb maires",
+            "ird_dep"   : "IRD",
         },
     )
     fig_map.update_geos(
@@ -130,6 +171,7 @@ with st.expander("📋 Voir les données complètes par département"):
             "nb_maires" : "Nb maires",
             "pct_femmes": "% femmes",
             "age_moyen" : "Âge moyen",
+            "ird_dep"   : "IRD",
         }).sort_values("Département"),
         use_container_width=True,
         hide_index=True,
