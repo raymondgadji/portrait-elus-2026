@@ -122,3 +122,5 @@ with col_f:
     - Détail par profession
     - Comparaison vs population active
     """)
+
+afficher_footer()
