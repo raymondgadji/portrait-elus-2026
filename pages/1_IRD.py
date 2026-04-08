@@ -3,30 +3,27 @@ pages/1_IRD.py
 --------------
 Indice de Représentativité Démocratique (IRD)
 Score synthétique mesurant à quel point les élus ressemblent à leurs administrés.
-Données : RNE (Ministère de l'Intérieur) x Recensement INSEE 2021
+Données : RNE (Ministère de l'Intérieur)
+Références population : moyennes nationales INSEE 2021 (instantané, sans téléchargement)
 
 Formule IRD par commune (0 = très peu représentatif, 100 = parfaitement représentatif) :
-  - Composante Genre   : écart entre % femmes élues et % femmes population
-  - Composante Âge     : écart entre âge moyen élus et âge médian population
-  - Composante CSP     : écart entre % cadres+prof.intel. élus et % actifs correspondants INSEE
-  IRD = 100 - moyenne_pondérée(ces 3 écarts normalisés)
+  - Composante Genre   : écart entre % femmes élues et % femmes population (51.6%)
+  - Composante Âge     : écart entre âge moyen élus et âge médian population (42 ans)
+  - Composante CSP     : écart entre % cadres élus et % cadres population active (18%)
+  IRD = moyenne_pondérée(ces 3 scores normalisés)
 """
 
 import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-import requests
-from pathlib import Path
 from utils.loader import charger_maires, charger_conseillers
-
 
 # ── Config ────────────────────────────────────────────────────────────────────
 st.set_page_config(page_title="IRD - Indice de Représentativité", page_icon="🏛️", layout="wide")
 
 LINKEDIN = "https://www.linkedin.com/in/raymond-gadji/"
 
-# afficher_badge_defi DOIT être définie AVANT afficher_footer
 def afficher_badge_defi():
     st.markdown(
         """
@@ -66,7 +63,7 @@ def afficher_footer():
                 style="color:#4A90D9;text-decoration:none;font-weight:600;">Raymond Gadji</a>
                 — Data Analyst</p>
             <p style="margin:0.25rem 0 0 0;font-size:0.75rem;color:#888;">
-                Sources : RNE (Ministère de l'Intérieur) | Recensement INSEE 2021
+                Sources : RNE (Ministère de l'Intérieur) | Références INSEE 2021
                 | Licence Ouverte 2.0</p>
         </div>""",
         unsafe_allow_html=True,
@@ -80,7 +77,7 @@ st.markdown("""
 
 L'IRD est un score inédit calculé pour chaque commune, qui mesure l'écart entre
 le **profil des élus** (genre, âge, catégorie socio-professionnelle) et
-le **profil de la population** (recensement INSEE 2021).
+le **profil de la population** (références INSEE 2021).
 
 > **Score 100** → les élus sont le miroir parfait de leur population.
 > **Score 0** → les élus ne ressemblent pas du tout à leurs administrés.
@@ -90,108 +87,42 @@ with st.expander("📐 Comment est calculé l'IRD ?"):
     st.markdown("""
     L'IRD combine **3 composantes** normalisées, chacune notée de 0 à 100 :
 
-    | Composante | Mesure | Poids |
-    |-----------|--------|-------|
-    | **Genre** | % femmes élues − % femmes population | 40% |
-    | **Âge** | âge moyen élus − âge médian population / 0,5 | 35% |
-    | **CSP** | % cadres+prof.intel. élus − % actifs correspondants | 25% |
+    | Composante | Mesure | Référence nationale | Poids |
+    |-----------|--------|---------------------|-------|
+    | **Genre** | % femmes élues vs % femmes population | 51.6% | 40% |
+    | **Âge** | âge moyen élus vs âge médian population | 42 ans | 35% |
+    | **CSP** | % cadres élus vs % cadres actifs | 18% | 25% |
 
     Chaque écart est converti en score (100 = pas d'écart, 0 = écart maximal).
     L'IRD est la moyenne pondérée des 3 composantes.
 
     **Sources :**
     - Profil des élus : Répertoire National des Élus (RNE), Ministère de l'Intérieur
-    - Profil de la population : Recensement de la population 2021, INSEE
+    - Références population : Recensement INSEE 2021 (moyennes nationales)
     """)
 
-# ── Téléchargement données INSEE ──────────────────────────────────────────────
-# On utilise les fichiers du recensement 2021 disponibles sur insee.fr
-# Variables clés extraites du dossier complet :
-# P21_POP : population totale
-# P21_POPF : population féminine
-# P21_POP1564 : pop 15-64 ans (actifs potentiels)
-# P21_CS3 : cadres et professions intellectuelles supérieures
-# P21_AGEMT : âge médian
-
-URL_INSEE = (
-    "https://www.insee.fr/fr/statistiques/fichier/5359146/"
-    "dossier_complet.zip"
-)
-FICHIER_INSEE = Path("data/raw/insee_communes_2021.csv")
-
-@st.cache_data(show_spinner="Chargement des données INSEE 2021...")
-def charger_insee() -> pd.DataFrame:
-    """
-    Charge les données INSEE du recensement 2021.
-    Utilise un sous-ensemble léger de variables utiles pour l'IRD.
-    """
-    # Variables nécessaires pour l'IRD
-    VARS = [
-        "CODGEO",       # code commune INSEE (5 chars)
-        "LIBGEO",       # nom commune
-        "P21_POP",      # population totale
-        "P21_POPF",     # population féminine
-        "P21_POP1564",  # pop 15-64 ans
-        "P21_CS3",      # cadres et prof. intellectuelles sup.
-        "P21_CS6",      # ouvriers
-        "P21_CS5",      # employés
-        "MED21",        # revenu médian (Filosofi)
-    ]
-
-    # Tentative de chargement depuis le fichier local
-    if FICHIER_INSEE.exists():
-        df = pd.read_csv(FICHIER_INSEE, sep=";", encoding="utf-8",
-                         low_memory=False, dtype={"CODGEO": str})
-        cols_dispo = [c for c in VARS if c in df.columns]
-        return df[cols_dispo].copy()
-
-    # Si absent → téléchargement du fichier complet (zip ~50Mo)
-    st.warning("Téléchargement du fichier INSEE (environ 50 Mo, une seule fois)...")
-    try:
-        import zipfile, io
-        r = requests.get(URL_INSEE, timeout=180)
-        r.raise_for_status()
-        z = zipfile.ZipFile(io.BytesIO(r.content))
-        # Trouver le CSV principal dans le zip
-        csv_name = [n for n in z.namelist() if n.endswith(".csv") and "dossier" in n.lower()]
-        if not csv_name:
-            csv_name = [n for n in z.namelist() if n.endswith(".csv")]
-        if csv_name:
-            FICHIER_INSEE.parent.mkdir(parents=True, exist_ok=True)
-            with z.open(csv_name[0]) as f:
-                df = pd.read_csv(f, sep=";", encoding="utf-8",
-                                 low_memory=False, dtype={"CODGEO": str})
-            cols_dispo = [c for c in VARS if c in df.columns]
-            df[cols_dispo].to_csv(FICHIER_INSEE, sep=";", index=False)
-            return df[cols_dispo].copy()
-    except Exception as e:
-        st.error(f"Impossible de charger les données INSEE : {e}")
-        return pd.DataFrame()
-
-    return pd.DataFrame()
-
-
+# ── Calcul IRD ────────────────────────────────────────────────────────────────
 @st.cache_data(show_spinner="Calcul de l'IRD par commune...")
-def calculer_ird(maires: pd.DataFrame, insee: pd.DataFrame) -> pd.DataFrame:
+def calculer_ird(maires: pd.DataFrame) -> pd.DataFrame:
     """
-    Calcule l'IRD pour chaque commune ayant un maire dans le RNE.
+    Calcule l'IRD pour chaque commune.
+    Utilise les moyennes nationales INSEE 2021 comme référence — aucun téléchargement externe.
     """
-    if insee.empty:
-        return pd.DataFrame()
-
-    # ── Profil des maires par commune ────────────────────────────────────────
+    maires = maires.copy()
     maires["code_commune_5"] = (
         maires["code_dep"].astype(str).str.zfill(2) +
         maires["code_commune"].astype(str).str.zfill(3)
     )
 
-    profil_elus = maires.groupby(["code_commune_5", "commune", "code_dep", "dep"]).agg(
-        nb_elus        = ("sexe", "count"),
+    # ── Profil des maires par commune ────────────────────────────────────
+    profil_elus = maires.groupby(
+        ["code_commune_5", "commune", "code_dep", "dep"]
+    ).agg(
+        nb_elus         = ("sexe", "count"),
         pct_femmes_elus = ("sexe", lambda x: (x == "F").mean() * 100),
-        age_moyen_elus = ("age",  "mean"),
+        age_moyen_elus  = ("age",  "mean"),
     ).reset_index()
 
-    # CSP des maires : % cadres+prof.intel.
     def pct_cadres(df_commune):
         total = len(df_commune)
         if total == 0:
@@ -204,112 +135,50 @@ def calculer_ird(maires: pd.DataFrame, insee: pd.DataFrame) -> pd.DataFrame:
 
     csp_elus = maires.groupby("code_commune_5").apply(pct_cadres).reset_index()
     csp_elus.columns = ["code_commune_5", "pct_cadres_elus"]
-
     profil_elus = profil_elus.merge(csp_elus, on="code_commune_5", how="left")
 
-    # ── Profil de la population INSEE ────────────────────────────────────────
-    insee = insee.copy()
-    insee["CODGEO"] = insee["CODGEO"].astype(str).str.zfill(5)
+    # ── Références nationales INSEE 2021 ──────────────────────────────────
+    profil_elus["pct_femmes_pop"] = 51.6   # % femmes population française
+    profil_elus["age_median_pop"] = 42.0   # âge médian France métropolitaine
+    profil_elus["pct_cadres_pop"] = 18.0   # % cadres population active
 
-    for col in ["P21_POP", "P21_POPF", "P21_POP1564", "P21_CS3"]:
-        if col in insee.columns:
-            insee[col] = pd.to_numeric(insee[col], errors="coerce")
-
-    if "P21_POP" in insee.columns and "P21_POPF" in insee.columns:
-        insee["pct_femmes_pop"] = insee["P21_POPF"] / insee["P21_POP"] * 100
-    else:
-        insee["pct_femmes_pop"] = 51.6  # moyenne nationale si absent
-
-    if "P21_POP1564" in insee.columns and "P21_CS3" in insee.columns:
-        insee["pct_cadres_pop"] = insee["P21_CS3"] / insee["P21_POP1564"].replace(0, pd.NA) * 100
-    else:
-        insee["pct_cadres_pop"] = 18.0  # moyenne nationale si absent
-
-    # Âge médian de la population (on utilise une approximation à 42 ans si absent)
-    if "MED21" in insee.columns:
-        # MED21 = revenu médian, pas l'âge. On utilise une valeur par défaut.
-        pass
-    insee["age_median_pop"] = 42.0  # âge médian France métropolitaine 2021
-
-    insee_reduit = insee[["CODGEO", "pct_femmes_pop", "pct_cadres_pop", "age_median_pop"]].copy()
-
-    # ── Fusion ────────────────────────────────────────────────────────────────
-    merged = profil_elus.merge(
-        insee_reduit,
-        left_on="code_commune_5",
-        right_on="CODGEO",
-        how="left"
-    )
-
-    # Valeurs par défaut si INSEE absent pour cette commune
-    merged["pct_femmes_pop"]  = merged["pct_femmes_pop"].fillna(51.6)
-    merged["pct_cadres_pop"]  = merged["pct_cadres_pop"].fillna(18.0)
-    merged["age_median_pop"]  = merged["age_median_pop"].fillna(42.0)
-
-    # ── Calcul IRD ────────────────────────────────────────────────────────────
-    # Composante Genre (poids 40%)
-    ecart_genre = (merged["pct_femmes_elus"] - merged["pct_femmes_pop"]).abs()
+    # ── Calcul des scores ─────────────────────────────────────────────────
+    ecart_genre = (profil_elus["pct_femmes_elus"] - profil_elus["pct_femmes_pop"]).abs()
     score_genre = (100 - ecart_genre.clip(0, 100)).clip(0, 100)
 
-    # Composante Âge (poids 35%) — écart normalisé sur 30 ans max
-    ecart_age = (merged["age_moyen_elus"] - merged["age_median_pop"]).abs()
+    ecart_age = (profil_elus["age_moyen_elus"] - profil_elus["age_median_pop"]).abs()
     score_age = (100 - (ecart_age / 30 * 100)).clip(0, 100)
 
-    # Composante CSP (poids 25%) — écart sur % cadres
-    ecart_csp = (merged["pct_cadres_elus"] - merged["pct_cadres_pop"]).abs()
+    ecart_csp = (profil_elus["pct_cadres_elus"] - profil_elus["pct_cadres_pop"]).abs()
     score_csp = (100 - ecart_csp.clip(0, 100)).clip(0, 100)
 
-    # IRD pondéré
-    merged["IRD"] = (
+    profil_elus["IRD"] = (
         score_genre * 0.40 +
         score_age   * 0.35 +
         score_csp   * 0.25
     ).round(1)
 
-    merged["score_genre"] = score_genre.round(1)
-    merged["score_age"]   = score_age.round(1)
-    merged["score_csp"]   = score_csp.round(1)
-    merged["ecart_genre"] = ecart_genre.round(1)
-    merged["ecart_age"]   = ecart_age.round(1)
-    merged["ecart_csp"]   = ecart_csp.round(1)
+    profil_elus["score_genre"] = score_genre.round(1)
+    profil_elus["score_age"]   = score_age.round(1)
+    profil_elus["score_csp"]   = score_csp.round(1)
+    profil_elus["ecart_genre"] = ecart_genre.round(1)
+    profil_elus["ecart_age"]   = ecart_age.round(1)
+    profil_elus["ecart_csp"]   = ecart_csp.round(1)
 
-    # Classement
-    merged["rang"] = merged["IRD"].rank(ascending=False, method="min").astype(int)
-    merged = merged.sort_values("IRD", ascending=False)
+    profil_elus["rang"] = profil_elus["IRD"].rank(
+        ascending=False, method="min"
+    ).astype(int)
 
-    return merged
+    return profil_elus.sort_values("IRD", ascending=False)
 
 
 # ── Chargement ────────────────────────────────────────────────────────────────
-maires = charger_maires()
+maires      = charger_maires()
 conseillers = charger_conseillers()
-insee  = charger_insee()
 
-if insee.empty:
-    st.error(
-        "Les données INSEE n'ont pas pu être chargées. "
-        "L'IRD sera calculé avec les moyennes nationales comme référence. "
-        "Le résultat reste indicatif mais exploitable."
-    )
-    # Créer un INSEE minimal avec les moyennes nationales
-    communes_uniques = (
-        maires[["code_dep", "code_commune"]]
-        .drop_duplicates()
-        .assign(
-            CODGEO=lambda d: d["code_dep"].astype(str).str.zfill(2) +
-                             d["code_commune"].astype(str).str.zfill(3),
-            pct_femmes_pop=51.6,
-            pct_cadres_pop=18.0,
-            age_median_pop=42.0,
-        )
-    )
-    insee = communes_uniques[["CODGEO", "pct_femmes_pop", "pct_cadres_pop", "age_median_pop"]]
-
-ird_df = calculer_ird(maires, insee)
-
-# P1 — Filtrer les communes avec IRD anormalement bas (données insuffisantes)
+ird_df = calculer_ird(maires)
 ird_df = ird_df[ird_df["IRD"] >= 10].copy()
-nb_communes = len(ird_df)  # recalculer après filtre
+nb_communes = len(ird_df)
 
 if ird_df.empty:
     st.error("Impossible de calculer l'IRD. Vérifiez les données.")
@@ -318,9 +187,8 @@ if ird_df.empty:
 # ── KPIs globaux ──────────────────────────────────────────────────────────────
 st.markdown("## 📊 Vue nationale")
 
-ird_moy = ird_df["IRD"].mean()
-ird_med = ird_df["IRD"].median()
-nb_communes = len(ird_df)
+ird_moy    = ird_df["IRD"].mean()
+ird_med    = ird_df["IRD"].median()
 pct_faible = (ird_df["IRD"] < 40).mean() * 100
 pct_bon    = (ird_df["IRD"] >= 70).mean() * 100
 
@@ -329,7 +197,7 @@ col1.metric("Communes analysées", f"{nb_communes:,}".replace(",", " "))
 col2.metric("IRD moyen national", f"{ird_moy:.1f}/100")
 col3.metric("IRD médian", f"{ird_med:.1f}/100")
 col4.metric("Communes IRD < 40", f"{pct_faible:.1f}%", help="Représentativité faible")
-col5.metric("Communes IRD ≥ 70", f"{pct_bon:.1f}%", help="Bonne représentativité")
+col5.metric("Communes IRD >= 70", f"{pct_bon:.1f}%", help="Bonne représentativité")
 
 # ── Onglets ───────────────────────────────────────────────────────────────────
 tab1, tab2, tab3, tab4 = st.tabs(["Distribution", "Classements", "Analyse", "Ma commune"])
@@ -353,9 +221,8 @@ with tab1:
         st.plotly_chart(fig_hist, use_container_width=True)
 
     with col_d:
-        # Répartition en catégories
         def categorie_ird(score):
-            if score >= 75: return "Très représentatif (≥75)"
+            if score >= 75: return "Très représentatif (>=75)"
             if score >= 60: return "Représentatif (60-74)"
             if score >= 45: return "Moyen (45-59)"
             return "Peu représentatif (<45)"
@@ -364,13 +231,13 @@ with tab1:
         cat_counts = ird_df["categorie"].value_counts().reset_index()
         cat_counts.columns = ["Catégorie", "Nombre"]
 
-        ordre = ["Très représentatif (≥75)", "Représentatif (60-74)",
+        ordre = ["Très représentatif (>=75)", "Représentatif (60-74)",
                  "Moyen (45-59)", "Peu représentatif (<45)"]
         couleurs = {
-            "Très représentatif (≥75)": "#2a9d8f",
-            "Représentatif (60-74)"   : "#e9c46a",
-            "Moyen (45-59)"           : "#f4a261",
-            "Peu représentatif (<45)" : "#e76f51",
+            "Très représentatif (>=75)": "#2a9d8f",
+            "Représentatif (60-74)"    : "#e9c46a",
+            "Moyen (45-59)"            : "#f4a261",
+            "Peu représentatif (<45)"  : "#e76f51",
         }
 
         fig_pie = px.pie(
@@ -383,7 +250,6 @@ with tab1:
         fig_pie.update_traces(textinfo="percent+label")
         st.plotly_chart(fig_pie, use_container_width=True)
 
-    # Analyse des 3 composantes
     st.markdown("### Contribution de chaque composante à l'IRD")
     composantes = pd.DataFrame({
         "Composante"          : ["Genre (40%)", "Âge (35%)", "CSP (25%)"],
@@ -405,15 +271,17 @@ with tab1:
     fig_comp.update_layout(coloraxis_showscale=False)
     st.plotly_chart(fig_comp, use_container_width=True)
 
-    # Phrase d'interprétation automatique
     score_g = ird_df["score_genre"].mean()
     score_a = ird_df["score_age"].mean()
     score_c = ird_df["score_csp"].mean()
-    plus_faible = min([("le genre", score_g), ("l'âge", score_a), ("la CSP", score_c)],
-                       key=lambda x: x[1])
+    plus_faible = min(
+        [("le genre", score_g), ("l'âge", score_a), ("la CSP", score_c)],
+        key=lambda x: x[1]
+    )
     st.info(
         f"**Lecture :** Avec un IRD moyen de **{ird_moy:.1f}/100**, les conseils municipaux "
-        f"français présentent une représentativité **{'faible' if ird_moy < 45 else 'moyenne' if ird_moy < 65 else 'correcte'}**. "
+        f"français présentent une représentativité "
+        f"**{'faible' if ird_moy < 45 else 'moyenne' if ird_moy < 65 else 'correcte'}**. "
         f"La composante la plus déficitaire est **{plus_faible[0]}** "
         f"(score moyen : {plus_faible[1]:.1f}/100), révélant que c'est sur ce critère que "
         f"l'écart entre élus et population est le plus marqué en France."
@@ -435,14 +303,13 @@ with tab2:
         st.dataframe(top20, use_container_width=True, hide_index=True)
 
     with col_d:
-        st.subheader("⚠️ Flop 20 — communes les moins représentatives")
+        st.subheader("Flop 20 — communes les moins représentatives")
         flop20 = ird_df.tail(20).sort_values("IRD")[
             ["commune", "dep", "IRD", "score_genre", "score_age", "score_csp", "nb_elus"]
         ].copy()
         flop20.columns = ["Commune", "Département", "IRD", "Genre", "Âge", "CSP", "Nb élus"]
         st.dataframe(flop20, use_container_width=True, hide_index=True)
 
-    # IRD moyen par département
     st.markdown("### IRD moyen par département")
     ird_dep = (
         ird_df.groupby("dep")["IRD"]
@@ -470,7 +337,6 @@ with tab2:
 with tab3:
     st.markdown("### IRD selon la taille des communes")
 
-    # Calcul du nb de conseillers par commune (vrai proxy de taille)
     nb_cons_par_commune = (
         conseillers
         .assign(code_commune_5=lambda d:
@@ -486,7 +352,7 @@ with tab3:
     ird_df_box["nb_conseillers"] = ird_df_box["nb_conseillers"].fillna(1)
 
     def taille_commune(nb):
-        if nb <= 7:  return "Très petites (≤7 conseillers)"
+        if nb <= 7:  return "Très petites (<=7 conseillers)"
         if nb <= 15: return "Petites (8-15 conseillers)"
         if nb <= 23: return "Moyennes (16-23 conseillers)"
         if nb <= 33: return "Grandes (24-33 conseillers)"
@@ -495,7 +361,7 @@ with tab3:
     ird_df_box["taille"] = ird_df_box["nb_conseillers"].apply(taille_commune)
 
     ordre_tailles = [
-        "Très petites (≤7 conseillers)",
+        "Très petites (<=7 conseillers)",
         "Petites (8-15 conseillers)",
         "Moyennes (16-23 conseillers)",
         "Grandes (24-33 conseillers)",
@@ -515,7 +381,6 @@ with tab3:
 
     st.markdown("### Relation IRD — parité femmes/hommes")
 
-    # % femmes par commune calculé sur les conseillers (valeurs continues 0-100%)
     pct_femmes_cons = (
         conseillers
         .assign(code_commune_5=lambda d:
@@ -582,15 +447,14 @@ with tab4:
                 couleur = "#2a9d8f" if ird_val >= 70 else "#e9c46a" if ird_val >= 50 else "#e76f51"
                 emoji   = "🟢" if ird_val >= 70 else "🟡" if ird_val >= 50 else "🔴"
 
-                # ── P4 : phrase d'interprétation automatique ──────────────
                 scores = {
                     "le genre": row["score_genre"],
                     "l'âge":    row["score_age"],
                     "la CSP":   row["score_csp"],
                 }
-                meilleur  = max(scores, key=scores.get)
+                meilleur    = max(scores, key=scores.get)
                 plus_faible = min(scores, key=scores.get)
-                rang_pct  = round((1 - (row["rang"] / nb_communes)) * 100)
+                rang_pct    = round((1 - (row["rang"] / nb_communes)) * 100)
 
                 if ird_val >= 70:
                     niveau = "très bonne"
@@ -609,7 +473,6 @@ with tab4:
                 with st.expander(
                     f"{emoji} **{row['commune']}** ({row['dep']}) — IRD : {ird_val}/100"
                 ):
-                    # ── Phrase interprétation (P4) ────────────────────────
                     st.info(phrase)
 
                     col1, col2 = st.columns(2)
@@ -621,11 +484,9 @@ with tab4:
                             .replace(",", " ")
                         )
                         st.markdown(f"Nombre d'élus : {row['nb_elus']}")
-
                         st.markdown("---")
                         st.markdown("**Détail des composantes :**")
 
-                        # ── P3 : jauges visuelles pour chaque composante ──
                         composantes_detail = [
                             ("Genre", row["score_genre"], row["ecart_genre"],
                              f"{row['ecart_genre']:.1f} pts d'écart élus/population"),
@@ -645,7 +506,6 @@ with tab4:
                             st.progress(int(score) / 100)
 
                     with col2:
-                        # Radar chart des 3 composantes
                         categories = ["Genre", "Âge", "CSP"]
                         values     = [row["score_genre"], row["score_age"], row["score_csp"]]
 
@@ -674,7 +534,6 @@ with tab4:
                             margin=dict(l=20, r=20, t=30, b=20),
                         )
                         st.plotly_chart(fig_radar, use_container_width=True)
-
     else:
         st.info("Entrez au moins 2 caractères pour rechercher une commune.")
 
