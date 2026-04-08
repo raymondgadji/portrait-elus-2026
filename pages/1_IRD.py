@@ -60,9 +60,9 @@ with st.expander("📐 Comment est calculé l'IRD ?"):
 
     | Composante | Mesure | Poids |
     |-----------|--------|-------|
-    | **Genre** | \|% femmes élues − % femmes population\| | 40% |
-    | **Âge** | \|âge moyen élus − âge médian population\| / 0,5 | 35% |
-    | **CSP** | \|% cadres+prof.intel. élus − % actifs correspondants\| | 25% |
+    | **Genre** | % femmes élues − % femmes population | 40% |
+    | **Âge** | âge moyen élus − âge médian population / 0,5 | 35% |
+    | **CSP** | % cadres+prof.intel. élus − % actifs correspondants | 25% |
 
     Chaque écart est converti en score (100 = pas d'écart, 0 = écart maximal).
     L'IRD est la moyenne pondérée des 3 composantes.
