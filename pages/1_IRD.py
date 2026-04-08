@@ -26,7 +26,38 @@ st.set_page_config(page_title="IRD - Indice de Représentativité", page_icon="�
 
 LINKEDIN = "https://www.linkedin.com/in/raymond-gadji/"
 
+# afficher_badge_defi DOIT être définie AVANT afficher_footer
+def afficher_badge_defi():
+    st.markdown(
+        """
+        <div style="display:flex;justify-content:center;margin:0.5rem 0 1rem 0;">
+            <span style="
+                background-color:#003189;
+                color:white;
+                padding:0.4rem 1rem;
+                border-radius:20px;
+                font-size:0.8rem;
+                font-weight:600;
+                letter-spacing:0.05em;
+                display:flex;
+                align-items:center;
+                gap:0.5rem;
+            ">
+                <span style="
+                    width:8px;height:8px;
+                    background:#4CAF50;
+                    border-radius:50%;
+                    display:inline-block;
+                "></span>
+                DÉFI OPEN DATA · DATA.GOUV.FR · ÉLECTIONS MUNICIPALES 2026
+            </span>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
 def afficher_footer():
+    afficher_badge_defi()
     st.markdown("---")
     st.markdown(
         f"""<div style="text-align:center;padding:0.8rem 0 0.2rem 0;">
@@ -43,6 +74,7 @@ def afficher_footer():
 
 # ── Titre & explication ───────────────────────────────────────────────────────
 st.title("🏛️ Indice de Représentativité Démocratique (IRD)")
+afficher_badge_defi()
 st.markdown("""
 **Question centrale :** Les élu·es municipaux ressemblent-ils aux habitant·es qu'ils représentent ?
 

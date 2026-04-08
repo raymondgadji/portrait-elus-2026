@@ -8,7 +8,38 @@ import pandas as pd
 
 LINKEDIN = "https://www.linkedin.com/in/raymond-gadji/"
 
+# afficher_badge_defi DOIT être définie AVANT afficher_footer
+def afficher_badge_defi():
+    st.markdown(
+        """
+        <div style="display:flex;justify-content:center;margin:0.5rem 0 1rem 0;">
+            <span style="
+                background-color:#003189;
+                color:white;
+                padding:0.4rem 1rem;
+                border-radius:20px;
+                font-size:0.8rem;
+                font-weight:600;
+                letter-spacing:0.05em;
+                display:flex;
+                align-items:center;
+                gap:0.5rem;
+            ">
+                <span style="
+                    width:8px;height:8px;
+                    background:#4CAF50;
+                    border-radius:50%;
+                    display:inline-block;
+                "></span>
+                DÉFI OPEN DATA · DATA.GOUV.FR · ÉLECTIONS MUNICIPALES 2026
+            </span>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
 def afficher_footer():
+    afficher_badge_defi()
     st.markdown("---")
     st.markdown(
         f"""
@@ -34,6 +65,7 @@ from utils.loader import charger_maires, charger_conseillers
 
 st.set_page_config(page_title="Professions", page_icon="💼", layout="wide")
 st.title("💼 Professions des élu·es")
+afficher_badge_defi()
 st.markdown(
     "Les élu·es municipaux représentent-ils toutes les catégories socio-professionnelles "
     "de la société française ? Quels métiers sont sur- ou sous-représentés ?"
