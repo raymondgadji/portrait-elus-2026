@@ -1,6 +1,5 @@
 # Données brutes — téléchargées automatiquement au lancement
 data/raw/
-data/processed/
 
 # Python
 __pycache__/
