@@ -1,15 +1,14 @@
 """
 pages/1_IRD.py
 --------------
-Indice de Représentativité Démocratique (IRD)
+Indice de Représentativité Démocratique (IRD) — V2
 Score synthétique mesurant à quel point les élus ressemblent à leurs administrés.
-Données : RNE (Ministère de l'Intérieur)
-Références population : moyennes nationales INSEE 2021 (instantané, sans téléchargement)
+Données : RNE (Ministère de l'Intérieur) x INSEE par commune (insee_light.csv)
 
 Formule IRD par commune (0 = très peu représentatif, 100 = parfaitement représentatif) :
-  - Composante Genre   : écart entre % femmes élues et % femmes population (51.6%)
-  - Composante Âge     : écart entre âge moyen élus et âge médian population (42 ans)
-  - Composante CSP     : écart entre % cadres élus et % cadres population active (18%)
+  - Composante Genre   : écart entre % femmes élues et % femmes population (par commune)
+  - Composante Âge     : écart entre âge moyen élus et âge médian population (42 ans national)
+  - Composante CSP     : écart entre % cadres élus et % cadres population active (par commune)
   IRD = moyenne_pondérée(ces 3 scores normalisés)
 """
 
@@ -17,12 +16,14 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+from pathlib import Path
 from utils.loader import charger_maires, charger_conseillers
 
 # ── Config ────────────────────────────────────────────────────────────────────
 st.set_page_config(page_title="IRD - Indice de Représentativité", page_icon="🏛️", layout="wide")
 
 LINKEDIN = "https://www.linkedin.com/in/raymond-gadji/"
+INSEE_LIGHT = Path("data/processed/insee_light.csv")
 
 def afficher_badge_defi():
     st.markdown(
@@ -63,7 +64,7 @@ def afficher_footer():
                 style="color:#4A90D9;text-decoration:none;font-weight:600;">Raymond Gadji</a>
                 — Data Analyst</p>
             <p style="margin:0.25rem 0 0 0;font-size:0.75rem;color:#888;">
-                Sources : RNE (Ministère de l'Intérieur) | Références INSEE 2021
+                Sources : RNE (Ministère de l'Intérieur) | Recensement INSEE 2022
                 | Licence Ouverte 2.0</p>
         </div>""",
         unsafe_allow_html=True,
@@ -77,7 +78,7 @@ st.markdown("""
 
 L'IRD est un score inédit calculé pour chaque commune, qui mesure l'écart entre
 le **profil des élus** (genre, âge, catégorie socio-professionnelle) et
-le **profil de la population** (références INSEE 2021).
+le **profil de la population** (recensement INSEE 2022 par commune).
 
 > **Score 100** → les élus sont le miroir parfait de leur population.
 > **Score 0** → les élus ne ressemblent pas du tout à leurs administrés.
@@ -87,26 +88,35 @@ with st.expander("📐 Comment est calculé l'IRD ?"):
     st.markdown("""
     L'IRD combine **3 composantes** normalisées, chacune notée de 0 à 100 :
 
-    | Composante | Mesure | Référence nationale | Poids |
-    |-----------|--------|---------------------|-------|
-    | **Genre** | % femmes élues vs % femmes population | 51.6% | 40% |
-    | **Âge** | âge moyen élus vs âge médian population | 42 ans | 35% |
-    | **CSP** | % cadres élus vs % cadres actifs | 18% | 25% |
+    | Composante | Mesure | Source | Poids |
+    |-----------|--------|--------|-------|
+    | **Genre** | % femmes élues vs % femmes population | INSEE par commune | 40% |
+    | **Âge** | âge moyen élus vs âge médian population | 42 ans (national) | 35% |
+    | **CSP** | % cadres élus vs % cadres actifs | INSEE par commune | 25% |
 
     Chaque écart est converti en score (100 = pas d'écart, 0 = écart maximal).
     L'IRD est la moyenne pondérée des 3 composantes.
 
     **Sources :**
     - Profil des élus : Répertoire National des Élus (RNE), Ministère de l'Intérieur
-    - Références population : Recensement INSEE 2021 (moyennes nationales)
+    - Profil de la population : Recensement INSEE 2022 (données par commune)
     """)
+
+# ── Chargement INSEE léger ────────────────────────────────────────────────────
+@st.cache_data(show_spinner="Chargement des données INSEE par commune...")
+def charger_insee_light() -> pd.DataFrame:
+    """Charge le fichier INSEE léger pré-traité (données par commune)."""
+    if INSEE_LIGHT.exists():
+        return pd.read_csv(INSEE_LIGHT, dtype={"CODGEO": str})
+    return pd.DataFrame()
 
 # ── Calcul IRD ────────────────────────────────────────────────────────────────
 @st.cache_data(show_spinner="Calcul de l'IRD par commune...")
-def calculer_ird(maires: pd.DataFrame) -> pd.DataFrame:
+def calculer_ird(maires: pd.DataFrame, insee: pd.DataFrame) -> pd.DataFrame:
     """
     Calcule l'IRD pour chaque commune.
-    Utilise les moyennes nationales INSEE 2021 comme référence — aucun téléchargement externe.
+    Utilise les données INSEE par commune si disponibles,
+    sinon les moyennes nationales comme fallback.
     """
     maires = maires.copy()
     maires["code_commune_5"] = (
@@ -137,10 +147,22 @@ def calculer_ird(maires: pd.DataFrame) -> pd.DataFrame:
     csp_elus.columns = ["code_commune_5", "pct_cadres_elus"]
     profil_elus = profil_elus.merge(csp_elus, on="code_commune_5", how="left")
 
-    # ── Références nationales INSEE 2021 ──────────────────────────────────
-    profil_elus["pct_femmes_pop"] = 51.6   # % femmes population française
-    profil_elus["age_median_pop"] = 42.0   # âge médian France métropolitaine
-    profil_elus["pct_cadres_pop"] = 18.0   # % cadres population active
+    # ── Fusion avec INSEE par commune ─────────────────────────────────────
+    if not insee.empty:
+        insee = insee.copy()
+        insee["CODGEO"] = insee["CODGEO"].astype(str).str.zfill(5)
+        profil_elus = profil_elus.merge(
+            insee.rename(columns={"CODGEO": "code_commune_5"}),
+            on="code_commune_5",
+            how="left"
+        )
+        profil_elus["pct_femmes_pop"] = profil_elus["pct_femmes_pop"].fillna(51.6)
+        profil_elus["pct_cadres_pop"] = profil_elus["pct_cadres_pop"].fillna(18.0)
+        profil_elus["age_median_pop"] = profil_elus["age_median_pop"].fillna(42.0)
+    else:
+        profil_elus["pct_femmes_pop"] = 51.6
+        profil_elus["pct_cadres_pop"] = 18.0
+        profil_elus["age_median_pop"] = 42.0
 
     # ── Calcul des scores ─────────────────────────────────────────────────
     ecart_genre = (profil_elus["pct_femmes_elus"] - profil_elus["pct_femmes_pop"]).abs()
@@ -175,8 +197,15 @@ def calculer_ird(maires: pd.DataFrame) -> pd.DataFrame:
 # ── Chargement ────────────────────────────────────────────────────────────────
 maires      = charger_maires()
 conseillers = charger_conseillers()
+insee       = charger_insee_light()
 
-ird_df = calculer_ird(maires)
+if insee.empty:
+    st.warning(
+        "Données INSEE par commune non trouvées — utilisation des moyennes nationales. "
+        "Les scores restent indicatifs."
+    )
+
+ird_df = calculer_ird(maires, insee)
 ird_df = ird_df[ird_df["IRD"] >= 10].copy()
 nb_communes = len(ird_df)
 
