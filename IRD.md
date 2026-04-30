@@ -15,7 +15,7 @@ Maintenant imagine qu'on choisit 5 enfants pour représenter toute la classe —
 
 - **Score 100** → Les élus sont le miroir parfait des habitants. Parfait.
 - **Score 0** → Les élus ne ressemblent pas du tout aux habitants. Problème.
-- **Score moyen en France : 45/100** → On est dans la moyenne basse. Il y a du travail.
+- **Score moyen en France (V2) : 49.1/100** → Représentativité moyenne.
 
 ---
 
@@ -33,7 +33,7 @@ L'IRD est né de cette question. Au lieu de dire vaguement "les élus sont trop 
 
 Avant l'IRD, il n'existait **aucun observatoire officiel français** proposant un score synthétique de représentativité par commune. Des études existaient sur la parité, d'autres sur l'âge des élus — mais jamais les trois ensemble, jamais par commune, jamais avec un score unique de 0 à 100.
 
-C'est la nouveauté de l'IRD : **croiser trois dimensions en un seul chiffre, pour chacune des 34 735 communes de France**.
+C'est la nouveauté de l'IRD : **croiser trois dimensions en un seul chiffre, pour chacune des 32 354 communes analysées**.
 
 ---
 
@@ -42,19 +42,19 @@ C'est la nouveauté de l'IRD : **croiser trois dimensions en un seul chiffre, po
 L'IRD mesure l'écart entre **le profil des élus** et **le profil de la population** sur trois critères :
 
 ### 1. Le Genre (40% du score)
-On compare le pourcentage de femmes parmi les élus avec le pourcentage de femmes dans la population.
+On compare le pourcentage de femmes parmi les élus avec le pourcentage de femmes dans la population de chaque commune (données INSEE 2022).
 
-> **Exemple :** Si une ville a 30% de femmes élues, mais que la population est composée à 52% de femmes → l'écart est de 22 points. Plus l'écart est grand, plus le score genre est bas.
+> **Exemple :** Si une ville a 30% de femmes élues, mais que sa population est composée à 51% de femmes → l'écart est de 21 points. Plus l'écart est grand, plus le score genre est bas.
 
 ### 2. L'Âge (35% du score)
-On compare l'âge moyen des élus avec l'âge médian de la population.
+On compare l'âge moyen des élus avec l'âge médian de la population nationale (42 ans).
 
-> **Exemple :** Si les élus ont en moyenne 62 ans, mais que l'âge médian des habitants est 42 ans → l'écart est de 20 ans. Les élus sont structurellement plus vieux que la population. C'est la composante la plus déficitaire en France (score moyen : 29/100).
+> **Exemple :** Si les élus ont en moyenne 62 ans → l'écart est de 20 ans. Les élus sont structurellement plus vieux que la population. C'est la composante la plus déficitaire en France (score moyen V2 : 41.4/100).
 
 ### 3. La Catégorie Socio-Professionnelle — CSP (25% du score)
-On compare le pourcentage de cadres et professions intellectuelles parmi les élus avec leur part dans la population active.
+On compare le pourcentage de cadres et professions intellectuelles parmi les élus avec leur part dans la population active de chaque commune (données INSEE 2022).
 
-> **Exemple :** Si 80% des élus sont cadres, avocats ou médecins, mais que les cadres ne représentent que 18% de la population active → les "cols blancs" sont massivement surreprésentés.
+> **Exemple :** Si 80% des élus sont cadres, avocats ou médecins, mais que les cadres ne représentent que 15% de la population active locale → les "cols blancs" sont massivement surreprésentés.
 
 ### Le calcul final
 Chaque écart est transformé en score de 0 à 100 (100 = pas d'écart, 0 = écart maximal), puis on fait la **moyenne pondérée** des trois scores.
@@ -65,17 +65,30 @@ IRD = (score_genre × 40%) + (score_âge × 35%) + (score_CSP × 25%)
 
 ---
 
-## 📊 Ce que les chiffres nous disent sur la France
+## 📊 Ce que les chiffres nous disent sur la France — Version 2 (avril 2026)
 
-| Indicateur | Valeur |
-|-----------|--------|
-| Communes analysées | 34 735 |
-| IRD moyen national | 45.0 / 100 |
-| Communes avec IRD < 40 (faible) | 37.6% |
-| Communes avec IRD ≥ 70 (bon) | 4.0% |
-| Composante la plus déficitaire | L'âge (29.4/100) |
+| Indicateur | Valeur V2 |
+|-----------|-----------|
+| Communes analysées | 32 354 |
+| IRD moyen national | 49.1 / 100 |
+| IRD médian | 49.2 / 100 |
+| Communes avec IRD < 40 (faible) | 26.8% |
+| Communes avec IRD ≥ 70 (bon) | 7.7% |
+| Score genre moyen | 49.1 / 100 |
+| Score âge moyen | 41.4 / 100 ← le plus déficitaire |
+| Score CSP moyen | 59.9 / 100 |
 
-**En clair :** Plus d'un tiers des communes françaises ont une représentativité faible. Seulement 4% atteignent un bon niveau. Et c'est l'âge — pas le genre, pas la CSP — qui creuse le plus grand fossé entre élus et citoyens.
+**En clair :** La France est à 49.1/100 — une représentativité moyenne. C'est légèrement mieux qu'estimé en V1 (45/100) grâce aux données réelles par commune. Mais c'est loin d'être satisfaisant : plus d'un quart des communes ont une représentativité faible. Et c'est l'âge — pas le genre, pas la CSP — qui creuse le plus grand fossé entre élus et citoyens.
+
+### Évolution V1 → V2
+| Indicateur | V1 (moyennes nationales) | V2 (données par commune) |
+|-----------|--------------------------|--------------------------|
+| IRD moyen | 45.0/100 | **49.1/100** |
+| IRD médian | 44.5/100 | **49.2/100** |
+| Communes IRD < 40 | 37.6% | **26.8%** |
+| Communes IRD ≥ 70 | 4.0% | **7.7%** |
+
+La V2 utilise les vraies données de population par commune (% femmes, % cadres) au lieu des moyennes nationales uniformes — ce qui donne des scores plus précis et plus nuancés.
 
 ---
 
@@ -87,7 +100,7 @@ IRD = (score_genre × 40%) + (score_âge × 35%) + (score_CSP × 25%)
 L'IRD donne un **diagnostic actionnable**. Ce n'est pas une critique, c'est un outil de pilotage.
 
 ### Pour un préfet ou un ministre
-> *"Les communes du Pas-de-Calais ont un IRD moyen de 38/100, parmi les plus bas de France. Qu'est-ce qui se passe là-bas ? Quels leviers activer ?"*
+> *"Les communes du Pas-de-Calais ont un IRD moyen parmi les plus bas de France. Qu'est-ce qui se passe là-bas ? Quels leviers activer ?"*
 
 L'IRD permet de **cibler les politiques publiques** là où le déficit démocratique est le plus fort.
 
@@ -105,7 +118,7 @@ L'IRD rend la démocratie **concrète et mesurable** pour n'importe qui.
 
 ## 🗞️ Comment l'expliquer à un journaliste en 30 secondes ?
 
-> *"Imaginez un thermomètre de la démocratie locale. On a calculé, pour chacune des 35 000 communes de France, à quel point les élus ressemblent aux habitants — en termes de genre, d'âge et de catégorie sociale. Le résultat : la France est à 45/100. Moins d'une commune sur vingt dépasse 70/100. Et le plus grand fossé, ce n'est pas entre hommes et femmes — c'est entre les générations. Les élus ont en moyenne 20 ans de plus que leurs administrés."*
+> *"Imaginez un thermomètre de la démocratie locale. On a calculé, pour chacune des 32 000 communes de France, à quel point les élus ressemblent aux habitants — en termes de genre, d'âge et de catégorie sociale. Le résultat : la France est à 49/100. Plus d'un quart des communes ont une représentativité faible. Et le plus grand fossé, ce n'est pas entre hommes et femmes — c'est entre les générations. Les élus ont en moyenne 20 ans de plus que leurs administrés."*
 
 ---
 
@@ -113,7 +126,7 @@ L'IRD rend la démocratie **concrète et mesurable** pour n'importe qui.
 
 L'IRD est un **indicateur, pas une vérité absolue**. Quelques limites à connaître :
 
-- **L'âge médian de la population** est une constante nationale (42 ans) faute de données par commune dans le recensement — les scores d'âge sont donc moins précis que les scores genre et CSP.
+- **L'âge médian de la population** est une constante nationale (42 ans) faute de données fiables par commune dans le recensement — les scores d'âge sont donc moins précis que les scores genre et CSP.
 - **La CSP des maires** est celle déclarée au RNE — des erreurs ou approximations existent dans les données sources.
 - **Un score faible n'est pas une faute**. Il indique un écart, pas une intention. Une commune rurale avec un maire agriculteur de 68 ans peut très bien représenter sa population si celle-ci est majoritairement âgée et agricole.
 - **L'IRD ne mesure pas la qualité de la gouvernance** — un élu très représentatif peut très mal gérer sa commune, et inversement.
@@ -125,8 +138,8 @@ L'IRD est un **indicateur, pas une vérité absolue**. Quelques limites à conna
 | Données | Source |
 |---------|--------|
 | Profil des élus (genre, âge, CSP) | Répertoire National des Élus (RNE) — Ministère de l'Intérieur |
-| Profil de la population | Recensement de la population 2021 — INSEE |
-| Résultats électoraux | Ministère de l'Intérieur — mars 2026 |
+| % femmes et % cadres par commune | Recensement de la population 2022 — INSEE |
+| Âge médian population | 42 ans (constante nationale) |
 
 Toutes les données sont **ouvertes, publiques et gratuites**. L'IRD est reproductible par n'importe qui.
 
@@ -134,14 +147,15 @@ Toutes les données sont **ouvertes, publiques et gratuites**. L'IRD est reprodu
 
 ## 🚀 Et ensuite ?
 
-L'IRD version 1 est un premier pas. Des améliorations sont envisagées :
+L'IRD version 2 intègre les données INSEE réelles par commune pour le genre et la CSP. Les pistes d'amélioration futures :
 
-- Intégrer l'âge médian **par commune** (données INSEE disponibles mais volumineuses)
-- Ajouter une **carte choroplèthe** de l'IRD par département
+- Intégrer l'âge médian **par commune** (données disponibles mais volumineuses)
 - Étendre le calcul aux **conseillers municipaux** (pas seulement les maires)
 - Suivre l'**évolution de l'IRD dans le temps** (comparaison 2020 vs 2026)
+- Transformer l'IRD en **observatoire permanent** mis à jour à chaque élection
 
 ---
 
-*IRD créé par Raymond Gadji — Data Analyst — dans le cadre du Challenge Open Data data.gouv.fr, Défi 2 : Profil des élus municipaux 2026.*
+*IRD créé par Raymond Gadji — Data Analyst — Lauréat du Challenge Open Data data.gouv.fr, Défi 2 : Profil des élus municipaux 2026.*
 *LinkedIn : https://www.linkedin.com/in/raymond-gadji/*
+*App : https://portrait-elus-2026.streamlit.app*

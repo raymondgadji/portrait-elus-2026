@@ -36,7 +36,7 @@ def afficher_badge_defi():
                     border-radius:50%;
                     display:inline-block;
                 "></span>
-                DÉFI OPEN DATA · DATA.GOUV.FR · ÉLECTIONS MUNICIPALES 2026
+                🏆 LAURÉAT · DÉFI OPEN DATA · DATA.GOUV.FR · ÉLECTIONS MUNICIPALES 2026
             </span>
         </div>
         """,
