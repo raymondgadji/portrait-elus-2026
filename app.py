@@ -64,6 +64,7 @@ def afficher_footer():
     )
 
 st.title("🗳️ Portrait des Élus Municipaux 2026")
+afficher_badge_defi()
 st.markdown("""
 **Qui sont les élu·es qui nous gouvernent ?** Sont-ils représentatifs de la population française ?
 
