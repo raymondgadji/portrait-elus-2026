@@ -36,7 +36,7 @@ def afficher_badge_defi():
                     border-radius:50%;
                     display:inline-block;
                 "></span>
-                🏆 LAURÉAT · 🏆 LAURÉAT · DÉFI OPEN DATA · DATA.GOUV.FR · ÉLECTIONS MUNICIPALES 2026
+                🏆 LAURÉAT · DÉFI OPEN DATA · DATA.GOUV.FR · ÉLECTIONS MUNICIPALES 2026
             </span>
         </div>
         """,
@@ -64,7 +64,6 @@ def afficher_footer():
     )
 
 st.title("🗳️ Portrait des Élus Municipaux 2026")
-afficher_badge_defi()
 st.markdown("""
 **Qui sont les élu·es qui nous gouvernent ?** Sont-ils représentatifs de la population française ?
 
