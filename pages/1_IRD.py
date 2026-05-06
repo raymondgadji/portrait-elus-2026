@@ -206,6 +206,7 @@ if insee.empty:
     )
 
 ird_df = calculer_ird(maires, insee)
+ird_df = ird_df.dropna(subset=["IRD"])
 ird_df = ird_df[ird_df["IRD"] >= 10].copy()
 nb_communes = len(ird_df)
 
