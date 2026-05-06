@@ -119,6 +119,10 @@ def calculer_ird(maires: pd.DataFrame, insee: pd.DataFrame) -> pd.DataFrame:
     sinon les moyennes nationales comme fallback.
     """
     maires = maires.copy()
+
+    # Conversion explicite de l'âge en numérique
+    maires["age"] = pd.to_numeric(maires["age"], errors="coerce")
+
     maires["code_commune_5"] = (
         maires["code_dep"].astype(str).str.zfill(2) +
         maires["code_commune"].astype(str).str.zfill(3)
@@ -133,6 +137,9 @@ def calculer_ird(maires: pd.DataFrame, insee: pd.DataFrame) -> pd.DataFrame:
         age_moyen_elus  = ("age",  "mean"),
     ).reset_index()
 
+    # Fallback âge moyen si NaN (42 ans = médiane nationale)
+    profil_elus["age_moyen_elus"] = profil_elus["age_moyen_elus"].fillna(42.0)
+
     def pct_cadres(df_commune):
         total = len(df_commune)
         if total == 0:
@@ -146,6 +153,7 @@ def calculer_ird(maires: pd.DataFrame, insee: pd.DataFrame) -> pd.DataFrame:
     csp_elus = maires.groupby("code_commune_5").apply(pct_cadres).reset_index()
     csp_elus.columns = ["code_commune_5", "pct_cadres_elus"]
     profil_elus = profil_elus.merge(csp_elus, on="code_commune_5", how="left")
+    profil_elus["pct_cadres_elus"] = profil_elus["pct_cadres_elus"].fillna(0.0)
 
     # ── Fusion avec INSEE par commune ─────────────────────────────────────
     if not insee.empty:
@@ -175,14 +183,10 @@ def calculer_ird(maires: pd.DataFrame, insee: pd.DataFrame) -> pd.DataFrame:
     score_csp = (100 - ecart_csp.clip(0, 100)).clip(0, 100)
 
     profil_elus["IRD"] = (
-    score_genre * 0.40 +
-    score_age   * 0.35 +
-    score_csp   * 0.25
+        score_genre * 0.40 +
+        score_age   * 0.35 +
+        score_csp   * 0.25
     ).round(1)
-
-    # Debug temporaire
-    st.write(f"Profil elus avant filtre: {len(profil_elus)} lignes, NaN IRD: {profil_elus['IRD'].isna().sum()}")
-    st.write(f"NaN age_moyen: {profil_elus['age_moyen_elus'].isna().sum()}, NaN pct_cadres: {profil_elus['pct_cadres_elus'].isna().sum()}")
 
     profil_elus["score_genre"] = score_genre.round(1)
     profil_elus["score_age"]   = score_age.round(1)
@@ -192,7 +196,7 @@ def calculer_ird(maires: pd.DataFrame, insee: pd.DataFrame) -> pd.DataFrame:
     profil_elus["ecart_csp"]   = ecart_csp.round(1)
 
     profil_elus["rang"] = profil_elus["IRD"].rank(
-    ascending=False, method="min"
+        ascending=False, method="min"
     ).fillna(0).astype(int)
 
     return profil_elus.sort_values("IRD", ascending=False)
@@ -215,7 +219,7 @@ ird_df = ird_df[ird_df["IRD"] >= 10].copy()
 nb_communes = len(ird_df)
 
 if ird_df.empty:
-    st.error(f"IRD vide. Colonnes maires: {list(maires.columns)}. INSEE shape: {insee.shape}")
+    st.error("Impossible de calculer l'IRD. Vérifiez les données.")
     st.stop()
 
 # ── KPIs globaux ──────────────────────────────────────────────────────────────
