@@ -127,14 +127,14 @@ with st.expander("📐 Méthodologie — comment est calculé l'IRD ?"):
     """)
 
 # ── Chargement INSEE ──────────────────────────────────────────────────────────
-@st.cache_data(show_spinner="Chargement des données INSEE par commune...")
+@st.cache_data(show_spinner="Chargement des données INSEE par commune...", ttl=0)
 def charger_insee_light() -> pd.DataFrame:
     if INSEE_LIGHT.exists():
         return pd.read_csv(INSEE_LIGHT, dtype={"CODGEO": str})
     return pd.DataFrame()
 
 # ── Calcul IRD ────────────────────────────────────────────────────────────────
-@st.cache_data(show_spinner="Calcul de l'IRD par commune...")
+@st.cache_data(show_spinner="Calcul de l'IRD par commune...", ttl=0)
 def calculer_ird(conseillers: pd.DataFrame, insee: pd.DataFrame) -> pd.DataFrame:
     """
     Calcule deux scores IRD pour chaque commune :
