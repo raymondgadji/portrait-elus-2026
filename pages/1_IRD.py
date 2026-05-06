@@ -190,7 +190,7 @@ def calculer_ird(conseillers: pd.DataFrame, insee: pd.DataFrame) -> pd.DataFrame
     score_age = (100 - (ecart_age / 30 * 100)).clip(0, 100)
 
     ecart_csp = (profil_elus["pct_cadres_elus"] - profil_elus["pct_cadres_pop"]).abs()
-    score_csp = (100 - ecart_csp.clip(0, 100)).clip(0, 100)
+    score_csp = (100 - (ecart_csp / 50 * 100)).clip(0, 100)
 
     profil_elus["IRD"] = (
         score_genre * 0.40 +
