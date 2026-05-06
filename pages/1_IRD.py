@@ -175,10 +175,14 @@ def calculer_ird(maires: pd.DataFrame, insee: pd.DataFrame) -> pd.DataFrame:
     score_csp = (100 - ecart_csp.clip(0, 100)).clip(0, 100)
 
     profil_elus["IRD"] = (
-        score_genre * 0.40 +
-        score_age   * 0.35 +
-        score_csp   * 0.25
+    score_genre * 0.40 +
+    score_age   * 0.35 +
+    score_csp   * 0.25
     ).round(1)
+
+    # Debug temporaire
+    st.write(f"Profil elus avant filtre: {len(profil_elus)} lignes, NaN IRD: {profil_elus['IRD'].isna().sum()}")
+    st.write(f"NaN age_moyen: {profil_elus['age_moyen_elus'].isna().sum()}, NaN pct_cadres: {profil_elus['pct_cadres_elus'].isna().sum()}")
 
     profil_elus["score_genre"] = score_genre.round(1)
     profil_elus["score_age"]   = score_age.round(1)
