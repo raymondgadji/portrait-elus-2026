@@ -81,7 +81,8 @@ def _corriger_encodage(serie: pd.Series) -> pd.Series:
 def _ajouter_tranches_age(df: pd.DataFrame) -> pd.DataFrame:
     bins   = [0, 29, 39, 49, 59, 69, 79, 120]
     labels = ["< 30", "30-39", "40-49", "50-59", "60-69", "70-79", "80+"]
-    df["tranche_age"] = pd.cut(df["age"], bins=bins, labels=labels, right=True)
+    age_num = pd.to_numeric(df["age"], errors="coerce")
+    df["tranche_age"] = pd.cut(age_num, bins=bins, labels=labels, right=True)
     return df
 
 
