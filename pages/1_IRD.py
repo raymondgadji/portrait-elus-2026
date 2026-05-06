@@ -149,11 +149,16 @@ def calculer_ird(conseillers: pd.DataFrame, insee: pd.DataFrame) -> pd.DataFrame
         total = len(df_commune)
         if total == 0:
             return 0
-        cadres = df_commune["csp"].str.lower().str.contains(
+        # Exclure les retraités (CSP commençant par "ancien")
+        actifs = df_commune[~df_commune["csp"].str.lower().str.startswith("ancien", na=False)]
+        total_actifs = len(actifs)
+        if total_actifs == 0:
+            return 0
+        cadres = actifs["csp"].str.lower().str.contains(
             "cadre|ingénieur|profession libérale|professeur|profession scientifique",
             na=False
         ).sum()
-        return cadres / total * 100
+        return cadres / total_actifs * 100
 
     csp_elus = conseillers.groupby("code_commune_5").apply(pct_cadres).reset_index()
     csp_elus.columns = ["code_commune_5", "pct_cadres_elus"]
