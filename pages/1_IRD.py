@@ -1,14 +1,17 @@
 """
 pages/1_IRD.py
 --------------
-Indice de Représentativité Démocratique (IRD) — V2
+Indice de Représentativité Démocratique (IRD) — V3
 Score synthétique mesurant à quel point les élus ressemblent à leurs administrés.
 Données : RNE (Ministère de l'Intérieur) x INSEE par commune (insee_light.csv)
 
+V3 : IRD calculé sur les CONSEILLERS MUNICIPAUX (pas seulement le maire)
+     → scores plus précis car basés sur plusieurs élus par commune
+
 Formule IRD par commune (0 = très peu représentatif, 100 = parfaitement représentatif) :
-  - Composante Genre   : écart entre % femmes élues et % femmes population (par commune)
-  - Composante Âge     : écart entre âge moyen élus et âge médian population (42 ans national)
-  - Composante CSP     : écart entre % cadres élus et % cadres population active (par commune)
+  - Composante Genre   : écart entre % femmes conseillères et % femmes population (par commune)
+  - Composante Âge     : écart entre âge moyen conseillers et âge médian population (42 ans national)
+  - Composante CSP     : écart entre % cadres conseillers et % cadres population active (par commune)
   IRD = moyenne_pondérée(ces 3 scores normalisés)
 """
 
@@ -77,7 +80,7 @@ st.markdown("""
 **Question centrale :** Les élu·es municipaux ressemblent-ils aux habitant·es qu'ils représentent ?
 
 L'IRD est un score inédit calculé pour chaque commune, qui mesure l'écart entre
-le **profil des élus** (genre, âge, catégorie socio-professionnelle) et
+le **profil des conseillers municipaux** (genre, âge, catégorie socio-professionnelle) et
 le **profil de la population** (recensement INSEE 2022 par commune).
 
 > **Score 100** → les élus sont le miroir parfait de leur population.
@@ -86,13 +89,16 @@ le **profil de la population** (recensement INSEE 2022 par commune).
 
 with st.expander("📐 Comment est calculé l'IRD ?"):
     st.markdown("""
+    L'IRD V3 est calculé sur l'ensemble des **conseillers municipaux** (pas uniquement le maire),
+    ce qui donne des scores beaucoup plus représentatifs de la réalité du conseil municipal.
+
     L'IRD combine **3 composantes** normalisées, chacune notée de 0 à 100 :
 
     | Composante | Mesure | Source | Poids |
     |-----------|--------|--------|-------|
-    | **Genre** | % femmes élues vs % femmes population | INSEE par commune | 40% |
-    | **Âge** | âge moyen élus vs âge médian population | 42 ans (national) | 35% |
-    | **CSP** | % cadres élus vs % cadres actifs | INSEE par commune | 25% |
+    | **Genre** | % femmes conseillères vs % femmes population | INSEE par commune | 40% |
+    | **Âge** | âge moyen conseillers vs âge médian population | 42 ans (national) | 35% |
+    | **CSP** | % cadres conseillers vs % cadres actifs | INSEE par commune | 25% |
 
     Chaque écart est converti en score (100 = pas d'écart, 0 = écart maximal).
     L'IRD est la moyenne pondérée des 3 composantes.
@@ -110,26 +116,25 @@ def charger_insee_light() -> pd.DataFrame:
         return pd.read_csv(INSEE_LIGHT, dtype={"CODGEO": str})
     return pd.DataFrame()
 
-# ── Calcul IRD ────────────────────────────────────────────────────────────────
+# ── Calcul IRD V3 ─────────────────────────────────────────────────────────────
 @st.cache_data(show_spinner="Calcul de l'IRD par commune...")
-def calculer_ird(maires: pd.DataFrame, insee: pd.DataFrame) -> pd.DataFrame:
+def calculer_ird(conseillers: pd.DataFrame, insee: pd.DataFrame) -> pd.DataFrame:
     """
-    Calcule l'IRD pour chaque commune.
-    Utilise les données INSEE par commune si disponibles,
-    sinon les moyennes nationales comme fallback.
+    Calcule l'IRD V3 pour chaque commune basé sur les conseillers municipaux.
+    Scores plus précis car basés sur plusieurs élus par commune.
     """
-    maires = maires.copy()
+    conseillers = conseillers.copy()
 
     # Conversion explicite de l'âge en numérique
-    maires["age"] = pd.to_numeric(maires["age"], errors="coerce")
+    conseillers["age"] = pd.to_numeric(conseillers["age"], errors="coerce")
 
-    maires["code_commune_5"] = (
-        maires["code_dep"].astype(str).str.zfill(2) +
-        maires["code_commune"].astype(str).str.zfill(3)
+    conseillers["code_commune_5"] = (
+        conseillers["code_dep"].astype(str).str.zfill(2) +
+        conseillers["code_commune"].astype(str).str.zfill(3)
     )
 
-    # ── Profil des maires par commune ────────────────────────────────────
-    profil_elus = maires.groupby(
+    # ── Profil des conseillers par commune ───────────────────────────────
+    profil_elus = conseillers.groupby(
         ["code_commune_5", "commune", "code_dep", "dep"]
     ).agg(
         nb_elus         = ("sexe", "count"),
@@ -150,7 +155,7 @@ def calculer_ird(maires: pd.DataFrame, insee: pd.DataFrame) -> pd.DataFrame:
         ).sum()
         return cadres / total * 100
 
-    csp_elus = maires.groupby("code_commune_5").apply(pct_cadres).reset_index()
+    csp_elus = conseillers.groupby("code_commune_5").apply(pct_cadres).reset_index()
     csp_elus.columns = ["code_commune_5", "pct_cadres_elus"]
     profil_elus = profil_elus.merge(csp_elus, on="code_commune_5", how="left")
     profil_elus["pct_cadres_elus"] = profil_elus["pct_cadres_elus"].fillna(0.0)
@@ -213,7 +218,8 @@ if insee.empty:
         "Les scores restent indicatifs."
     )
 
-ird_df = calculer_ird(maires, insee)
+# V3 : IRD calculé sur les conseillers municipaux
+ird_df = calculer_ird(conseillers, insee)
 ird_df = ird_df.dropna(subset=["IRD"])
 ird_df = ird_df[ird_df["IRD"] >= 10].copy()
 nb_communes = len(ird_df)
@@ -375,19 +381,8 @@ with tab2:
 with tab3:
     st.markdown("### IRD selon la taille des communes")
 
-    nb_cons_par_commune = (
-        conseillers
-        .assign(code_commune_5=lambda d:
-            d["code_dep"].astype(str).str.zfill(2) +
-            d["code_commune"].astype(str).str.zfill(3)
-        )
-        .groupby("code_commune_5")
-        .size()
-        .reset_index(name="nb_conseillers")
-    )
-
-    ird_df_box = ird_df.merge(nb_cons_par_commune, on="code_commune_5", how="left")
-    ird_df_box["nb_conseillers"] = ird_df_box["nb_conseillers"].fillna(1)
+    ird_df_box = ird_df.copy()
+    ird_df_box["nb_conseillers"] = ird_df_box["nb_elus"]
 
     def taille_commune(nb):
         if nb <= 7:  return "Très petites (<=7 conseillers)"
@@ -419,28 +414,15 @@ with tab3:
 
     st.markdown("### Relation IRD — parité femmes/hommes")
 
-    pct_femmes_cons = (
-        conseillers
-        .assign(code_commune_5=lambda d:
-            d["code_dep"].astype(str).str.zfill(2) +
-            d["code_commune"].astype(str).str.zfill(3)
-        )
-        .groupby("code_commune_5")
-        .apply(lambda x: (x["sexe"] == "F").mean() * 100)
-        .reset_index(name="pct_femmes_conseillers")
-    )
-
-    ird_df_scatter = ird_df.merge(pct_femmes_cons, on="code_commune_5", how="left")
-
     fig_scatter = px.scatter(
-        ird_df_scatter.sample(min(3000, len(ird_df_scatter)), random_state=42),
-        x="pct_femmes_conseillers",
+        ird_df.sample(min(3000, len(ird_df)), random_state=42),
+        x="pct_femmes_elus",
         y="IRD",
         color="score_genre",
         color_continuous_scale=["#e76f51", "#2a9d8f"],
         hover_data=["commune", "dep"],
         labels={
-            "pct_femmes_conseillers": "% de femmes parmi les conseillers municipaux",
+            "pct_femmes_elus": "% de femmes parmi les conseillers municipaux",
             "IRD": "Score IRD",
             "score_genre": "Score genre",
         },
