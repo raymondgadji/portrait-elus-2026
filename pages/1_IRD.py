@@ -150,7 +150,7 @@ def calculer_ird(conseillers: pd.DataFrame, insee: pd.DataFrame) -> pd.DataFrame
         if total == 0:
             return 0
         cadres = df_commune["csp"].str.lower().str.contains(
-            "cadre|ingénieur|profession libérale|médecin|pharmacien|architecte|avocat",
+            "cadre|ingénieur|profession libérale|professeur|profession scientifique",
             na=False
         ).sum()
         return cadres / total * 100
