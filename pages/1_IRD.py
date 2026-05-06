@@ -188,8 +188,8 @@ def calculer_ird(maires: pd.DataFrame, insee: pd.DataFrame) -> pd.DataFrame:
     profil_elus["ecart_csp"]   = ecart_csp.round(1)
 
     profil_elus["rang"] = profil_elus["IRD"].rank(
-        ascending=False, method="min"
-    ).astype(int)
+    ascending=False, method="min"
+    ).fillna(0).astype(int)
 
     return profil_elus.sort_values("IRD", ascending=False)
 
