@@ -211,7 +211,7 @@ ird_df = ird_df[ird_df["IRD"] >= 10].copy()
 nb_communes = len(ird_df)
 
 if ird_df.empty:
-    st.error(f"IRD vide. INSEE vide: {insee.empty}. Maires: {len(maires)}. Colonnes maires: {list(maires.columns[:5])}")
+    st.error(f"IRD vide. Colonnes maires: {list(maires.columns)}. INSEE shape: {insee.shape}")
     st.stop()
 
 # ── KPIs globaux ──────────────────────────────────────────────────────────────
