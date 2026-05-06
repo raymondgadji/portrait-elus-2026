@@ -134,7 +134,7 @@ def charger_insee_light() -> pd.DataFrame:
     return pd.DataFrame()
 
 # ── Calcul IRD ────────────────────────────────────────────────────────────────
-@st.cache_data(show_spinner="Calcul de l'IRD par commune...", ttl=0)
+
 def calculer_ird(conseillers: pd.DataFrame, insee: pd.DataFrame) -> pd.DataFrame:
     """
     Calcule deux scores IRD pour chaque commune :
