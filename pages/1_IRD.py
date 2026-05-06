@@ -144,8 +144,7 @@ def calculer_ird(conseillers: pd.DataFrame, insee: pd.DataFrame) -> pd.DataFrame
     conseillers = conseillers.copy()
     conseillers["age"] = pd.to_numeric(conseillers["age"], errors="coerce")
     conseillers["code_commune_5"] = (
-        conseillers["code_dep"].astype(str).str.zfill(2) +
-        conseillers["code_commune"].astype(str).str.zfill(3)
+    conseillers["code_commune"].astype(str).str.zfill(5)
     )
 
     # ── Profil des conseillers par commune ───────────────────────────────
@@ -202,7 +201,7 @@ def calculer_ird(conseillers: pd.DataFrame, insee: pd.DataFrame) -> pd.DataFrame
     score_age = (100 - (ecart_age / 30 * 100)).clip(0, 100)
 
     ecart_csp = (profil_elus["pct_cadres_elus"] - profil_elus["pct_cadres_pop"]).abs()
-    score_csp = (100 - (ecart_csp / 50 * 100)).clip(0, 100)
+    score_csp = (100 - (ecart_csp / 25 * 100)).clip(0, 100)
 
     profil_elus["IRD"] = (
         score_genre * 0.40 + score_age * 0.35 + score_csp * 0.25
@@ -223,7 +222,7 @@ def calculer_ird(conseillers: pd.DataFrame, insee: pd.DataFrame) -> pd.DataFrame
     score_age_nat = (100 - (ecart_age_nat / 30 * 100)).clip(0, 100)
 
     ecart_csp_nat = (profil_elus["pct_cadres_elus"] - REF_PCT_CADRES).abs()
-    score_csp_nat = (100 - (ecart_csp_nat / 50 * 100)).clip(0, 100)
+    score_csp_nat = (100 - (ecart_csp_nat / 25 * 100)).clip(0, 100)
 
     profil_elus["IRD_nat"] = (
         score_genre_nat * 0.40 + score_age_nat * 0.35 + score_csp_nat * 0.25
