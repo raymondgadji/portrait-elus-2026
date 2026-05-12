@@ -44,11 +44,19 @@ def _assurer_presence(fichier: Path, url: str) -> None:
 # ── Nettoyage ───────────────────────────────────────────────────────────────
 
 def _calculer_age(serie_ddn: pd.Series) -> pd.Series:
-    """Calcule l'âge en Python pur — compatible Python 3.13."""
+    """Calcule l'âge en Python pur — compatible Python 3.13.
+    Gère deux formats : DD/MM/YYYY (ancien RNE) et YYYY-MM-DD (nouveau RNE mai 2026).
+    """
     aujourd_hui = date.today()
     def age_depuis_str(s):
         try:
-            j, m, a = str(s).split("/")
+            s = str(s).strip()
+            if "-" in s and len(s) == 10 and s[4] == "-":
+                # Format YYYY-MM-DD (nouveau RNE)
+                a, m, j = s.split("-")
+            else:
+                # Format DD/MM/YYYY (ancien RNE)
+                j, m, a = s.split("/")
             naissance = date(int(a), int(m), int(j))
             return (aujourd_hui - naissance).days // 365
         except Exception:
