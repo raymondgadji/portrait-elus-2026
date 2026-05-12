@@ -3,6 +3,7 @@ app.py  —  Portrait des Élus Municipaux 2026
 Page d'accueil : KPIs globaux + navigation dans l'ordre de la sidebar
 """
 import streamlit as st
+import pandas as pd
 from utils.loader import charger_maires, charger_conseillers
 
 st.set_page_config(
@@ -84,8 +85,8 @@ conseillers = charger_conseillers()
 total_elus        = len(maires) + len(conseillers)
 pct_f_maires      = (maires["sexe"] == "F").mean() * 100
 pct_f_conseillers = (conseillers["sexe"] == "F").mean() * 100
-age_moy_maires    = maires["age"].dropna().mean()
-age_moy_cons      = conseillers["age"].dropna().mean()
+age_moy_maires    = pd.to_numeric(maires["age"], errors="coerce").dropna().mean()
+age_moy_cons      = pd.to_numeric(conseillers["age"], errors="coerce").dropna().mean()
 
 st.markdown("## 📊 Chiffres clés")
 col1, col2, col3, col4 = st.columns(4)
